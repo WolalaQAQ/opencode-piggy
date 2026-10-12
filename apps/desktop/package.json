@@ -1,0 +1,15 @@
+{
+  "name": "opencode-piggy-desktop-adapter",
+  "version": "0.6.5-rc.2",
+  "private": true,
+  "description": "原版 dsh-piggy Electron 入口的 OpenCode 适配",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "start": "node ../../scripts/start-opencode.mjs",
+    "start:opencode": "node ../../scripts/start-opencode.mjs"
+  },
+  "devDependencies": { "electron": "44.5.1" },
+  "dependencies": { "electron-updater": "6.7.3" },
+  "overrides": { "builder-util-runtime": "9.7.0" }
+}

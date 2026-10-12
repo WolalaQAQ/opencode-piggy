@@ -1,0 +1,14 @@
+# 源码统一使用 LF，避免 Windows 换行符造成无关改动。
+* text=auto eol=lf
+
+# 源码归档不包含本机开发资料。
+AGENTS.md export-ignore
+lessons.md export-ignore
+.opencode export-ignore
+.local export-ignore
+docs/ROADMAP.md export-ignore
+docs/design export-ignore
+docs/opencode-*.md export-ignore
+docs/openpets-reference.md export-ignore
+packages/opencode-probe export-ignore
+tools export-ignore

@@ -1,0 +1,54 @@
+# dependencies
+node_modules/
+
+# scratch files the plugin writes while running
+.smoke.json*
+*.log
+
+# 本机安装器生成的入口包含交付目录的绝对路径，不随源码提交。
+.opencode/plugins/opencode-piggy.js
+
+# editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# local backups made while editing
+*.bak
+*.orig
+__pycache__/
+dist/
+
+# 本机配置、凭据和发布暂存
+.local/
+.opencode/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# 运行时发现文件含令牌；队列、收据和存档不随源码提交
+bridge.json
+bridge-owner.json
+work-wal.json
+work-receipts.json
+state.json
+outbox/
+opencode-piggy-bridge/
+
+# 开发指令、纠错记录及现场证据仅保留在本地
+AGENTS.md
+**/AGENTS.md
+CLAUDE.md
+**/CLAUDE.md
+lessons.md
+docs/ROADMAP.md
+docs/design/
+docs/opencode-*.md
+docs/openpets-reference.md
+packages/opencode-probe/
+tools/

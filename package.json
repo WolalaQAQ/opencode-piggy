@@ -1,0 +1,21 @@
+{
+  "name": "dsh-piggy-opencode",
+  "version": "0.1.0-rc.3",
+  "private": true,
+  "description": "复用 dsh-piggy 的 OpenCode V2 兼容层",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "start": "node packages/opencode-bridge/daemon.js",
+    "start:bridge": "node packages/opencode-bridge/daemon.js",
+    "start:receiver": "node scripts/start-opencode.mjs",
+    "dist:win": "node scripts/build-windows.mjs",
+    "check": "node scripts/check-upstream.mjs",
+    "typecheck": "node scripts/typecheck.mjs"
+  },
+  "engines": { "node": ">=22.15" },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "20.19.43"
+  }
+}

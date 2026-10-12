@@ -1,0 +1,8 @@
+node_modules/
+
+# 迁移前的本机游戏产物和运行资源链接，不作为源码跟踪。
+game/
+renderer/
+dist/
+dist-game/
+game-pin.json
