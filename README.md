@@ -2,7 +2,7 @@
 
 中文 | [English](README.en.md)
 
-OpenCode Piggy 让 [dsh-piggy](https://github.com/CLICGGER-TYPES/dsh-piggy) 桌宠随 OpenCode 的工作成长。OpenCode V2 插件捕获工作事件，交给一个没有窗口的独立后台桥，游戏再按原规则应用这些事件。窗口、玩法、数值、存档、客户端和素材都来自原版 dsh-piggy。
+OpenCode Piggy 让 [dsh-piggy](https://github.com/CLICGGER-TYPES/dsh-piggy) 桌宠随 OpenCode 的工作成长。OpenCode V2 插件捕获工作事件，交给一个没有窗口的独立后台桥，游戏再按原规则应用这些事件。窗口、玩法、数值、存档、客户端和素材都来自原版 dsh-piggy。插件运行在 OpenCode 服务中，OpenCode Desktop 和 TUI 共用同一套联动。
 
 dsh-piggy 官方安装包没有接收外部工作事件的入口，所以本仓库提供自己的 Windows x64 安装包：它内置固定版本的游戏和接收适配，安装后即可与 OpenCode 联动。
 
@@ -11,7 +11,7 @@ dsh-piggy 官方安装包没有接收外部工作事件的入口，所以本仓�
 | OpenCode Piggy（兼容层） | 0.1.0-rc.3 |
 | dsh-piggy 游戏（固定子模块） | 0.36.1 |
 | 桌面外壳适配 | 0.6.5-rc.2 |
-| OpenCode | V2，2.0.26 或以上 |
+| OpenCode | V2（Desktop 与 TUI），2.0.26 或以上 |
 
 安装包在 [Releases](../../releases) 页面下载。
 
@@ -25,6 +25,8 @@ dsh-piggy 官方安装包没有接收外部工作事件的入口，所以本仓�
 
 1. 重新加载 OpenCode 项目，插件随之生效，并在需要时启动后台桥。
 2. 双击 **OpenCode Piggy** 快捷方式打开小猪，不用时直接关闭。
+
+插件在 OpenCode 服务中加载，Desktop 和 TUI 无需分别配置：在任一客户端里工作，都会推进小猪。TUI 联动已在 Windows、OpenCode 2.0.27 上验证。
 
 安装不会自动打开小猪。桥跟随插件和 OpenCode 后台服务的生命周期，与小猪窗口是否打开无关；小猪没开着时，工作事件先留在队列里，下次打开后再应用。
 
@@ -48,7 +50,7 @@ dsh-piggy 官方安装包没有接收外部工作事件的入口，所以本仓�
 node scripts/install-opencode.mjs --project="/path/to/your-project"
 ```
 
-重新打开 OpenCode 中的项目，插件会连接或启动独立 Node 桥，不会启动或退出小猪。插件引用本机源码目录，启用后不要移动它。全局启用、设置与停用见[使用指南](docs/guides/opencode.md)。
+在 OpenCode Desktop 或 TUI 中重新打开项目，插件会连接或启动独立 Node 桥，不会启动或退出小猪。插件引用本机源码目录，启用后不要移动它。全局启用、设置与停用见[使用指南](docs/guides/opencode.md)。
 
 也可以手动运行桥：
 

@@ -2,7 +2,7 @@
 
 [中文](README.md) | English
 
-OpenCode Piggy lets the [dsh-piggy](https://github.com/CLICGGER-TYPES/dsh-piggy) desktop pet grow with your OpenCode work. An OpenCode V2 plugin captures work events and hands them to a standalone background bridge that has no window. The game then applies them under its original rules. The window, gameplay, numbers, save format, client and art all come from the original dsh-piggy.
+OpenCode Piggy lets the [dsh-piggy](https://github.com/CLICGGER-TYPES/dsh-piggy) desktop pet grow with your OpenCode work. An OpenCode V2 plugin captures work events and hands them to a standalone background bridge that has no window. The game then applies them under its original rules. The window, gameplay, numbers, save format, client and art all come from the original dsh-piggy. The plugin runs inside the OpenCode service, so OpenCode Desktop and the TUI share the same integration.
 
 The official dsh-piggy installer has no entry point for external work events, so this repository ships its own Windows x64 installer. It bundles the pinned game version together with the receiving adaptation, and works with OpenCode right after installation.
 
@@ -11,7 +11,7 @@ The official dsh-piggy installer has no entry point for external work events, so
 | OpenCode Piggy (compatibility layer) | 0.1.0-rc.3 |
 | dsh-piggy game (pinned submodule) | 0.36.1 |
 | Desktop shell adaptation | 0.6.5-rc.2 |
-| OpenCode | V2, 2.0.26 or later |
+| OpenCode | V2 (Desktop and TUI), 2.0.26 or later |
 
 Download the installer from the [Releases](../../releases) page.
 
@@ -25,6 +25,8 @@ After installing:
 
 1. Reload your OpenCode project. The plugin loads and starts the background bridge when needed.
 2. Double-click the **OpenCode Piggy** shortcut to open the pet, and close it whenever you like.
+
+The plugin loads in the OpenCode service, so Desktop and the TUI need no separate setup: work in either client and the pet grows. The TUI integration has been verified on Windows with OpenCode 2.0.27.
 
 Installation does not open the pet. The bridge follows the lifecycle of the plugin and the OpenCode background service, not the pet window. While the pet is closed, work events wait in the queue and are applied the next time it opens.
 
@@ -48,7 +50,7 @@ The plugin and bridge need neither Electron nor the game submodule. From the rep
 node scripts/install-opencode.mjs --project="/path/to/your-project"
 ```
 
-Reopen the project in OpenCode. The plugin connects to the standalone Node bridge or starts it, and never starts or quits the pet. The plugin points at this local source directory, so do not move it after enabling. For global enabling, options and disabling, see the [usage guide](docs/guides/opencode.md) (Chinese).
+Reopen the project in OpenCode Desktop or the TUI. The plugin connects to the standalone Node bridge or starts it, and never starts or quits the pet. The plugin points at this local source directory, so do not move it after enabling. For global enabling, options and disabling, see the [usage guide](docs/guides/opencode.md) (Chinese).
 
 You can also run the bridge by hand:
 

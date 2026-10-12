@@ -1,6 +1,6 @@
 # OpenCode 插件与独立工作桥
 
-插件运行在 OpenCode V2 服务中（2.0.26 或以上），捕获工作事件并启动独立 Node 桥。桥没有窗口，不启动或退出小猪。游戏固定为 0.36.1，游戏侧接收适配支持源码运行和 Windows 安装包。
+插件运行在 OpenCode V2 服务中（2.0.26 或以上），订阅服务端的公共事件，捕获工作事件并启动独立 Node 桥。OpenCode Desktop 和 TUI 连接的是同一类服务，所以共用这一套插件与桥，不需要按客户端分别配置。桥没有窗口，不启动或退出小猪。游戏固定为 0.36.1，游戏侧接收适配支持源码运行和 Windows 安装包。
 
 ## Windows 安装
 
@@ -8,7 +8,7 @@
 
 安装自动写入当前用户的全局 `opencode-piggy.js` 插件入口，不修改 JSON/JSONC；入口引用安装目录内的插件，桥使用内置的 `resources/bridge-node/node.exe`。已有非托管的同名入口不会被覆盖，安装详情会报告冲突。
 
-重新加载 OpenCode 项目后生效。通过桌面或开始菜单中的 **OpenCode Piggy** 启动小猪；关闭小猪不关闭桥，安装本身也不启动小猪。
+重新加载 OpenCode 项目后生效，Desktop 和 TUI 都一样。通过桌面或开始菜单中的 **OpenCode Piggy** 启动小猪；关闭小猪不关闭桥，安装本身也不启动小猪。
 
 如果项目中已经启用了源码插件，先在源码仓库停用它，避免全局与项目两处重复启用：
 
@@ -40,7 +40,15 @@ node scripts/install-opencode.mjs --project="/path/to/your-project"
 
 全局启用使用 `--global`。脚本只管理自己的 `opencode-piggy.js` 自动发现入口，不覆盖 JSON/JSONC 或其他插件。全局位置遵循 `OPENCODE_CONFIG_DIR` 或 `~/.config/opencode/plugins/`，项目位置为 `.opencode/plugins/`。重新打开项目加载插件。入口引用本机源码目录，启用后不要移动或删除它。
 
-多个项目共用当前用户的一个桥，各自保持生产者租约。最后一个插件实例卸载或租约到期后桥退出，未应用事件保留。OpenCode 后台服务可能在 Desktop 窗口关闭后继续运行，桥不会仅因窗口关闭而立即退出。
+多个项目共用当前用户的一个桥，各自保持生产者租约。最后一个插件实例卸载或租约到期后桥退出，未应用事件保留。OpenCode 后台服务可能在 Desktop 窗口或 TUI 关闭后继续运行，桥不会仅因客户端关闭而立即退出。
+
+Desktop 用户直接打开已启用插件的项目；TUI 用户在终端运行：
+
+```sh
+opencode "/path/to/your-project"
+```
+
+也可以在该项目目录直接运行 `opencode`。小猪仍由用户单独打开，不需要另外启用一份 TUI 插件。
 
 手动运行桥：
 
@@ -127,4 +135,6 @@ node scripts/install-opencode.mjs --project="/path/to/your-project" --uninstall
 
 官方 dsh-piggy 0.36.1 不提供外部工作事件的接入口，扩展 API 也无法喂入工作成长。本仓库的 Windows 安装包包含接收适配，不是未经适配的官方原包，官方安装版不能直接与 OpenCode 联动。外部直接修改 `state.json` 会与常驻内存的 Store 竞争，不作为替代方案。
 
-目前只提供 Windows x64 安装包。macOS 和 Linux 可以从源码运行插件与桥，但还没有做真实的 Desktop 联动验收。
+目前只提供 Windows x64 安装包。macOS 和 Linux 可以从源码运行插件与桥，但还没有做真实的联动验收。
+
+Windows 上，OpenCode 2.0.27 的全屏 TUI 已完成一次真实联动验证：TUI 读取项目文件并回复后，对应的消息、工具和回合各在桥和游戏收据中记录 1 条，桥队列为 0。
