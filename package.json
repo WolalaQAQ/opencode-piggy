@@ -9,6 +9,7 @@
     "start": "node packages/opencode-bridge/daemon.js",
     "start:bridge": "node packages/opencode-bridge/daemon.js",
     "start:receiver": "node scripts/start-opencode.mjs",
+    "start:runtime-adapter": "node scripts/start-runtime-adapter.mjs",
     "dist:win": "node scripts/build-windows.mjs",
     "check": "node scripts/check-upstream.mjs",
     "typecheck": "node scripts/typecheck.mjs"

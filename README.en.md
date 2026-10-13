@@ -73,6 +73,19 @@ npm run start:receiver
 
 `prepare-release.mjs` targets Windows x64; on other platforms, prepare the Electron dependencies of `apps/desktop` yourself. The receiver connects to a running bridge. It does not start the bridge and does not stop it on exit.
 
+### Generic game-interface prototype
+
+The `feat/agent-runtime-prototype` branch also includes an OpenCode delivery adapter for the [generic game-runtime prototype](https://github.com/WolalaQAQ/dsh-piggy/tree/feat/agent-runtime-prototype). It reuses this repository's plugin and standalone bridge and talks to the game's local work-event API without injecting the desktop main process.
+
+Prepare Electron dependencies in the prototype game checkout, select a separate userData directory and run `npm start -- --work-events`. Discovery is published to `work-endpoint/endpoint.json` inside that userData directory. Install the plugin for a separate OpenCode project with an isolated bridge directory, then run:
+
+```sh
+node scripts/install-opencode.mjs --project="/path/to/isolated-project" --directory="/path/to/isolated-bridge"
+npm run start:runtime-adapter -- --game-endpoint="/path/to/userData/work-endpoint" --bridge-home="/path/to/isolated-bridge"
+```
+
+The adapter acknowledges the bridge only after the game confirms its commit. Each bridge allows one receiver; do not connect both the original game receiver and the generic adapter to the same bridge. The prototype does not replace installed plugins, queues or game saves.
+
 ### Build the Windows installer
 
 On Windows x64, set up the dependencies above and NSIS 3. If `makensis.exe` is not on PATH, set `MAKENSIS` to its full path:

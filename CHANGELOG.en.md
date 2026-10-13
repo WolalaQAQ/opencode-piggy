@@ -2,6 +2,17 @@
 
 [中文](CHANGELOG.md) | English
 
+## [Unreleased] - 2026-10-14
+
+### Features
+- Adds a delivery adapter and manual startup entry from the standalone OpenCode bridge to the generic game API, reusing the existing plugin and event mapping.
+
+### Design Rationale
+- The game owns framework-neutral ingestion and commit semantics, while OpenCode conversion and bridge lifecycle remain in the adapter. Prototype integration no longer wraps the game's main process.
+
+### Notes & Caveats
+- The generic adapter requires the prototype game with work-event protocol v1. Existing installer and source receiver entrypoints are unchanged. Do not connect two receivers to the same bridge.
+
 ## [0.1.0-rc.3] - 2026-10-12
 
 ### Features

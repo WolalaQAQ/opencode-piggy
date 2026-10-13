@@ -73,6 +73,19 @@ npm run start:receiver
 
 `prepare-release.mjs` 面向 Windows x64；其他平台请自行准备 `apps/desktop` 的 Electron 依赖。接收端主动连接已有的桥，不启动桥，退出时也不关闭桥。
 
+### 通用游戏接口原型
+
+`feat/agent-runtime-prototype` 分支还提供面向[通用游戏运行时原型](https://github.com/WolalaQAQ/dsh-piggy/tree/feat/agent-runtime-prototype)的 OpenCode 投递适配。它复用本仓库的插件和独立桥，通过本机工作事件接口接入游戏，不注入桌面主进程。
+
+在原型游戏源码中准备 Electron 依赖，使用独立 userData，并通过 `npm start -- --work-events` 启动。发现文件位于该 userData 的 `work-endpoint/endpoint.json`。为独立 OpenCode 项目安装插件时，用 `--directory` 指定隔离桥目录，然后运行：
+
+```sh
+node scripts/install-opencode.mjs --project="/path/to/isolated-project" --directory="/path/to/isolated-bridge"
+npm run start:runtime-adapter -- --game-endpoint="/path/to/userData/work-endpoint" --bridge-home="/path/to/isolated-bridge"
+```
+
+游戏提交并确认后，适配器才向桥补发 ACK。每个桥只支持一个接收者，原游戏接收端和通用接口适配器不要同时连接同一桥。原型不替换已安装插件、队列或游戏存档。
+
 ### 构建 Windows 安装包
 
 在 Windows x64 上准备好上面的依赖和 NSIS 3 编译器。`makensis.exe` 不在 PATH 时，将 `MAKENSIS` 设置为它的完整路径：
