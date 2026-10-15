@@ -2,65 +2,20 @@
 
 [中文](CHANGELOG.md) | English
 
-## [Unreleased] - 2026-10-16
+## [0.2.0-rc.1] - 2026-10-16
 
 ### Features
-- Adds a delivery adapter and manual startup entry from the standalone OpenCode bridge to the generic game API, reusing the existing plugin and event mapping.
-- Adds the `gameDirectory` plugin option and installer flag `--game-endpoint` to run the HTTP adapter with the OpenCode service. Projects in the same service share a receiver, released when the last related plugin unloads.
+- A self-contained OpenCode V2 plugin. It subscribes to public server events, maps work records to events with stable IDs, writes them asynchronously to a persistent outbox and delivers them over HTTP to dsh-piggy's official work-event API. Desktop and the TUI share the plugin; OpenCode 2.0.26 or later is required.
+- Events keep being persisted while the game is closed and are delivered when it reopens. Delivery retries every 5 seconds and an event is removed only after the game returns `applied`, `duplicate` or `ignored`. Events older than the game's 7-day acceptance window stop being sent automatically and stay on disk.
+- Projects in one OpenCode service share a single dispatcher that stops when the last plugin unloads. A new project waits for an in-flight shutdown to finish before taking over.
+- Automatic discovery of the game's `work-endpoint`: the installed build's `dsh-piggy` first, then the source build's `dsh-piggy-desktop` when the former has no discovery file. `PIGGY_USERDATA`, the `gameDirectory` plugin option and the `--game-endpoint` installer flag override it, with explicit settings taking priority. The queue defaults to `opencode-piggy-plugin/` under the configuration root and can be set with `directory` or `--directory`.
+- Released on GitHub Releases as both `.tgz` and `.zip` archives with a common top-level `package/` directory, containing only the plugin code, license and README. `npm run pack:plugin` builds both archives.
+- GitHub Actions runs checks, packages and creates a Release when a `v*` tag is pushed; a manual run can produce just a draft.
 
 ### Design Rationale
-- The game owns framework-neutral ingestion and commit semantics, while OpenCode conversion and bridge lifecycle remain in the adapter. Integration no longer wraps the game's main process.
+- The official game provides a framework-neutral durable ingestion API, so the plugin can map and deliver reliably from the OpenCode side without an intermediate process. The outbox sits on the OpenCode side so work records survive the game being closed, and retries reuse the original event ID so the game can deduplicate.
+- The plugin uses only Node built-in modules and stays self-contained, so users need no extra runtime. The user starts the game; the plugin registers no model tools and changes no model context.
 
 ### Notes & Caveats
-- The HTTP adapter connects to official dsh-piggy main source containing `8f72f17`, with `--work-events` explicitly enabled. The existing installer, pinned submodule and receiver entrypoints are unchanged. Connect only one receiver to each bridge.
-
-## [0.1.0-rc.3] - 2026-10-12
-
-### Features
-- The upstream submodule is upgraded and pinned to dsh-piggy `0.36.1` (`329be94`). The desktop shell adaptation is version `0.6.5-rc.2`.
-- Adds a Windows x64 installer that bundles the game, Electron, a standalone Node bridge runtime and the plugin. It installs per user without administrator rights, enables the global plugin and creates desktop and Start menu shortcuts.
-- The installed app opens in game receiving mode. The pet is opened and closed by the user and installation never starts it. Uninstalling keeps the save and the bridge queue and removes only the global plugin entry that belongs to that install directory.
-- Adds a GitHub Actions release workflow: pushing a version tag builds and publishes the Windows x64 installer, and a manual run can produce a draft only.
-- Adds `scripts/prepare-release.mjs`, which sets up Electron, the runtime dependencies and the type-check dependencies from a pinned list.
-
-### Design Rationale
-- The installer takes care of dependencies and the launch entry. The plugin, the bridge and the pet keep separate lifecycles, and the plugin never starts the pet.
-- The submodule's directory layout and load-time integration are kept. Original files are only copied into the build output, and the client is not rebuilt.
-- The plugin is loaded by OpenCode as a plain file on disk and the bridge uses the Node runtime shipped in the package. The installer is generated directly by NSIS.
-
-### Notes & Caveats
-- If a project already enables the source plugin entry, disable it first so it does not load alongside the installer's global entry.
-- Before upgrading or uninstalling, quit the pet and stop any OpenCode background service that is using the runtime in the install directory.
-
-## [0.1.0-rc.2] - 2026-10-12
-
-### Features
-- The work bridge becomes a standalone Node background process, and the OpenCode plugin only starts it. Several projects share one bridge through their own leases.
-- The game receiver pulls queued events. The bridge removes an event only after the game has durably applied and acknowledged it. The bridge never loads the Store or writes the game save.
-- Plugin lease renewal no longer waits for long delivery batches. When a full queue rejects an event, its event-mapping cache entry is revoked.
-- The outbox acknowledges an event only after it is durably written, the write lock is published only after complete owner information is written, and the game publishes the WAL for the full settlement result before installing it into the Store.
-
-### Design Rationale
-- Starting and stopping the bridge is separate from the pet, and the game keeps its single background writer for saves. The bridge queue cannot replace a game transaction.
-- The standalone bridge uses a different default directory and role identifier from the older version, so a running older in-game bridge is never mistaken for it.
-- The game WAL moves to v2 and compares full state snapshots. New events use versioned BLAKE2 semantic IDs.
-- The launcher only merges requests within one process. The single writing instance across processes is guaranteed by the bridge itself.
-
-### Notes & Caveats
-- Upgrading from rc.1: `npm start` at the repository root now runs only the bridge. Run the source game receiver with `npm run start:receiver`.
-- The plugin no longer accepts the `executable` and `exitWhenDisconnected` options. Use `nodeExecutable` (`--node-executable` on the command line) to choose the Node runtime for the bridge. `directory` now means the bridge directory, not the pet's userData.
-- An unfinished old v1 game WAL is left untouched and automatic recovery stops. Old game saves, receipts and outboxes are not deleted or merged automatically.
-
-## [0.1.0-rc.1] - 2026-10-12
-
-### Features
-- The original dsh-piggy is added as a Git submodule pinned to game `0.36.0`. This repository maintains only the OpenCode compatibility code and docs.
-- The original Electron main process connects to the work bridge at load time. The window, game and art are used directly from the submodule, with no modified copy of its sources.
-
-### Design Rationale
-- Upstream code and the compatibility layer are managed separately. Upgrades happen through the submodule pointer and explicit adjustments to the integration points.
-- The original host and its single background writer are kept, so gameplay, UI and the save format stay unchanged.
-
-### Notes & Caveats
-- After cloning, run `git submodule update --init --recursive`. The entry point needs an Electron runtime that supports `module.registerHooks`.
-- The compatibility layer is enabled through the plugin script.
+- The game must include the work-event API from main commit `8f72f17` and be started with `--work-events`.
+- `directory` is the plugin queue directory and `gameDirectory` is the game's `work-endpoint/` directory; they are independent.

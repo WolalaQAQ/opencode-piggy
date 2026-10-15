@@ -8,14 +8,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const marker = '// opencode-piggy managed entry v1'
 
-/** @param {{target:string,uninstall?:boolean,ownedOnly?:boolean,options?:object}} input */
+/** @param {{target:string,uninstall?:boolean,options?:object}} input */
 export function installOpenCode(input) {
   const entry = join(input.target, 'opencode-piggy.js')
   const plugin = pathToFileURL(join(root, 'packages/opencode-piggy/index.js')).href
-  if (input.uninstall && input.ownedOnly && existsSync(entry)
-    && !readFileSync(entry, 'utf8').includes(`import plugin from ${JSON.stringify(plugin)}\n`)) return entry
   if (existsSync(entry) && !readFileSync(entry, 'utf8').startsWith(marker)) {
-    throw new Error(`refusing to overwrite unmanaged plugin: ${entry}`)
+    throw new Error(`不覆盖非托管插件入口：${entry}`)
   }
   if (input.uninstall) {
     if (existsSync(entry)) unlinkSync(entry)
@@ -31,19 +29,19 @@ function main() {
   const args = process.argv.slice(2)
   const value = name => args.find(arg => arg.startsWith(`${name}=`))?.slice(name.length + 1)
   const project = value('--project')
-  if (!project && !args.includes('--global')) throw new Error('choose --project=/path/to/project or --global')
-  if (value('--executable') || args.includes('--exit-disconnected')) {
-    throw new Error('desktop launch options were removed; use --node-executable for the independent bridge')
+  for (const arg of args) {
+    if (!['--global', '--uninstall'].includes(arg) && !/^--(?:project|directory|game-endpoint)=.+$/.test(arg)) {
+      throw new Error(`未知安装参数：${arg}`)
+    }
   }
+  if (!project && !args.includes('--global')) throw new Error('请选择 --project=/path/to/project 或 --global')
   const configHome = process.env.OPENCODE_CONFIG_DIR || join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'opencode')
   const target = project ? join(resolve(project), '.opencode/plugins') : join(configHome, 'plugins')
   const options = {
     ...(value('--directory') ? { directory: resolve(value('--directory')) } : {}),
-    ...(value('--node-executable') ? { nodeExecutable: resolve(value('--node-executable')) } : {}),
     ...(value('--game-endpoint') ? { gameDirectory: resolve(value('--game-endpoint')) } : {}),
-    ...(args.includes('--no-auto-start') ? { autoStart: false } : {}),
   }
-  console.log(installOpenCode({ target, uninstall: args.includes('--uninstall'), ownedOnly: args.includes('--owned-only'), options }))
+  console.log(installOpenCode({ target, uninstall: args.includes('--uninstall'), options }))
   console.log(args.includes('--uninstall') ? '插件停用处理完成；存档保留。' : '插件入口已安装；重新加载 OpenCode 项目后生效。')
 }
 

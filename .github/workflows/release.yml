@@ -22,9 +22,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  windows:
-    runs-on: windows-2025
-    timeout-minutes: 45
+  plugin:
+    runs-on: windows-latest
+    timeout-minutes: 15
     defaults:
       run:
         shell: pwsh
@@ -37,68 +37,54 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: refs/tags/${{ inputs.tag || github.ref_name }}
-          submodules: recursive
           persist-credentials: false
+
+      - name: 准备 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 安装类型检查依赖
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw '开发依赖安装失败' }
+
+      - name: 检查插件类型
+        run: |
+          npm run check
+          if ($LASTEXITCODE -ne 0) { throw '类型检查失败' }
+
+      - name: 打包自包含插件
+        run: |
+          npm run pack:plugin
+          if ($LASTEXITCODE -ne 0) { throw '插件打包失败' }
 
       - name: 验证版本并生成发布说明
         run: |
           node scripts/release-notes.mjs "$env:RELEASE_TAG" > "$env:RUNNER_TEMP/release-notes.md"
           if ($LASTEXITCODE -ne 0) { throw '发布版本检查失败' }
 
-      - name: 准备独立 Node 运行时
-        run: |
-          $version = '24.21.0'
-          $archive = "$env:RUNNER_TEMP/node.zip"
-          Invoke-WebRequest "https://nodejs.org/dist/v$version/node-v$version-win-x64.zip" -OutFile $archive
-          Expand-Archive -LiteralPath $archive -DestinationPath "$env:RUNNER_TEMP/bridge-runtime"
-          "$env:RUNNER_TEMP/bridge-runtime/node-v$version-win-x64" >> $env:GITHUB_PATH
-
-      - name: 准备构建依赖
-        run: |
-          node scripts/prepare-release.mjs
-          if ($LASTEXITCODE -ne 0) { throw '依赖准备失败' }
-
-      - name: 准备 NSIS
-        run: |
-          $archive = "$env:RUNNER_TEMP/nsis.zip"
-          node --input-type=module -e "import { writeFileSync } from 'node:fs'; const response = await fetch('https://netix.dl.sourceforge.net/project/nsis/NSIS%203/3.11/nsis-3.11.zip'); if (!response.ok) throw new Error('NSIS download HTTP ' + response.status); writeFileSync(process.env.RUNNER_TEMP + '/nsis.zip', Buffer.from(await response.arrayBuffer()));"
-          if ($LASTEXITCODE -ne 0) { throw 'NSIS 下载失败' }
-          Expand-Archive -LiteralPath $archive -DestinationPath "$env:RUNNER_TEMP/nsis"
-          "MAKENSIS=$env:RUNNER_TEMP/nsis/nsis-3.11/makensis.exe" >> $env:GITHUB_ENV
-
-      - name: 检查接入点与兼容层类型
-        run: |
-          npm run check
-          if ($LASTEXITCODE -ne 0) { throw '上游接入检查失败' }
-          npm run typecheck
-          if ($LASTEXITCODE -ne 0) { throw '类型检查失败' }
-
-      - name: 构建 Windows x64 安装包
-        run: |
-          npm run dist:win
-          if ($LASTEXITCODE -ne 0) { throw '安装包构建失败' }
-
       - name: 创建或继续草稿 Release
         run: |
+          $prerelease = $env:RELEASE_TAG.Contains('-').ToString().ToLowerInvariant()
           $json = gh release view "$env:RELEASE_TAG" --json isDraft
           if ($LASTEXITCODE -eq 0) {
             if (-not ($json | ConvertFrom-Json).isDraft) { throw '此版本已公开，请使用新的版本标签' }
-            gh release edit "$env:RELEASE_TAG" --notes-file "$env:RUNNER_TEMP/release-notes.md"
+            gh release edit "$env:RELEASE_TAG" --title "OpenCode Piggy $env:RELEASE_TAG" --notes-file "$env:RUNNER_TEMP/release-notes.md" "--prerelease=$prerelease"
           } else {
-            $flags = @('--draft', '--verify-tag')
-            if ($env:RELEASE_TAG.Contains('-')) { $flags += '--prerelease' }
-            gh release create "$env:RELEASE_TAG" --title "OpenCode Piggy $env:RELEASE_TAG" --notes-file "$env:RUNNER_TEMP/release-notes.md" @flags
+            gh release create "$env:RELEASE_TAG" --title "OpenCode Piggy $env:RELEASE_TAG" --notes-file "$env:RUNNER_TEMP/release-notes.md" --draft --verify-tag "--prerelease=$prerelease"
           }
           if ($LASTEXITCODE -ne 0) { throw '草稿 Release 准备失败' }
 
-      - name: 上传完整安装包
+      - name: 上传插件归档
         run: |
-          $project = Get-Content package.json -Raw -Encoding utf8 | ConvertFrom-Json
-          $game = Get-Content upstream/dsh-piggy/package.json -Raw -Encoding utf8 | ConvertFrom-Json
-          $installer = "dist/opencode-piggy-setup-game-$($game.version)-$($project.version)-x64.exe"
-          if (-not (Test-Path $installer)) { throw '安装包不存在' }
-          gh release upload "$env:RELEASE_TAG" $installer --clobber
-          if ($LASTEXITCODE -ne 0) { throw '安装包上传失败，Release 保留为草稿' }
+          $plugin = Get-Content packages/opencode-piggy/package.json -Raw -Encoding utf8 | ConvertFrom-Json
+          $base = "dist/$($plugin.name)-$($plugin.version)"
+          $tgz = "$base.tgz"
+          $zip = "$base.zip"
+          if (-not (Test-Path -LiteralPath $tgz) -or -not (Test-Path -LiteralPath $zip)) { throw '插件归档不存在' }
+          gh release upload "$env:RELEASE_TAG" $tgz $zip --clobber
+          if ($LASTEXITCODE -ne 0) { throw '插件归档上传失败，Release 保留为草稿' }
 
       - name: 公开 Release
         if: env.KEEP_DRAFT != 'true'

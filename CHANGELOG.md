@@ -2,65 +2,20 @@
 
 中文 | [English](CHANGELOG.en.md)
 
-## [Unreleased] - 2026-10-16
+## [0.2.0-rc.1] - 2026-10-16
 
 ### Features
-- 增加 OpenCode 独立桥到通用游戏接口的投递适配和手动启动入口，复用现有插件与事件映射。
-- 插件可配置 `gameDirectory`，让 HTTP 适配器随 OpenCode 服务启动；同一服务的多个项目共享接收者，最后一个相关插件卸载后释放。安装命令新增 `--game-endpoint`。
+- 自包含 OpenCode V2 插件：订阅服务端公共事件，把工作记录映射成带稳定 ID 的事件，先异步写入持久发件箱，再通过 HTTP 投递给 dsh-piggy 的官方工作事件接口。Desktop 和 TUI 共用同一个插件，要求 OpenCode 2.0.26 或以上。
+- 游戏关闭期间事件继续落盘，重开后补投；每 5 秒重试，收到 `applied`、`duplicate` 或 `ignored` 后才移除。超过官方 7 天接收窗口的事件停止自动投递并保留在磁盘上。
+- 同一 OpenCode 服务中的多个项目共用一个投递器，最后一个插件卸载时停止；新项目会等待在途的关闭完成后再接手。
+- 自动发现游戏的 `work-endpoint`：先找安装版的 `dsh-piggy`，其发现文件不存在时再找源码版的 `dsh-piggy-desktop`。可用 `PIGGY_USERDATA`、插件选项 `gameDirectory` 或安装参数 `--game-endpoint` 覆盖，显式设置优先。队列默认位于配置根目录下的 `opencode-piggy-plugin/`，可用 `directory` 或 `--directory` 指定。
+- 以 `.tgz` 和 `.zip` 两种归档发布到 GitHub Releases，顶层目录统一为 `package/`，内容仅为插件代码、许可和 README。`npm run pack:plugin` 生成这两个归档。
+- GitHub Actions 在推送 `v*` 标签时运行检查、打包并创建 Release，手动运行可以只生成草稿。
 
 ### Design Rationale
-- 游戏只提供框架无关的接收与提交能力，OpenCode 协议转换和桥生命周期留在适配侧，不再需要包装游戏主进程。
+- 官方游戏提供了与框架无关的持久接收接口，插件在 OpenCode 一侧完成映射和可靠投递即可，不需要中间进程。发件箱放在 OpenCode 一侧，游戏断开时工作记录不丢失，重试沿用原事件 ID，游戏端去重。
+- 插件只使用 Node 内置模块并保持目录自包含，使用者无需额外运行时。游戏由用户自己启动，插件不注册模型工具、不改模型上下文。
 
 ### Notes & Caveats
-- HTTP 适配可连接包含 `8f72f17` 的官方 dsh-piggy 主线源码，游戏需显式启用 `--work-events`。原有安装版、固定子模块与接收端入口保持不变；同一桥只连接一个接收端。
-
-## [0.1.0-rc.3] - 2026-10-12
-
-### Features
-- 上游子模块升级并固定到 dsh-piggy `0.36.1`（`329be94`），桌面外壳适配版本为 `0.6.5-rc.2`。
-- 提供 Windows x64 安装包，内含游戏、Electron、独立 Node 桥运行时和插件。按当前用户安装，无需管理员权限，自动启用全局插件并创建桌面和开始菜单快捷方式。
-- 安装版双击进入游戏接收模式。小猪由用户自行开关，安装不会启动它；卸载保留存档和桥队列，只移除属于该安装目录的全局插件入口。
-- 新增 GitHub Actions Release 工作流：推送版本标签后构建 Windows x64 安装包并发布，也可手动运行并只生成草稿。
-- 新增 `scripts/prepare-release.mjs`，按固定清单准备 Electron、运行依赖和类型检查依赖。
-
-### Design Rationale
-- 安装包负责依赖准备和启动入口；插件、桥和桌宠仍各自管理生命周期，插件不启动桌宠。
-- 沿用子模块的原目录布局和加载时接入方式，原版文件只在构建产物里复制，不重建客户端。
-- 插件作为普通磁盘文件交给 OpenCode 加载，桥使用随包的独立 Node 运行时；安装程序由 NSIS 直接生成。
-
-### Notes & Caveats
-- 项目里已启用源码插件入口时，先将其停用，避免与安装包的全局入口重复加载。
-- 升级和卸载前退出小猪，并停止占用安装目录运行时的 OpenCode 后台服务。
-
-## [0.1.0-rc.2] - 2026-10-12
-
-### Features
-- 工作桥拆为独立的 Node 后台进程，OpenCode 插件只负责启动桥；多个项目通过各自的租约共享同一个桥。
-- 游戏接收端主动拉取已入队事件，游戏持久应用并确认后桥才移除。桥不加载 Store，也不写游戏存档。
-- 插件续租不再等待长批次投递；队列满而拒收时，撤销对应的事件映射缓存。
-- 发件箱在持久写入后才确认入队；写锁在完整所有者信息写好后才发布；游戏完整结算结果在安装到 Store 前先发布 WAL。
-
-### Design Rationale
-- 桥与桌宠的启动和退出分开，游戏仍由后台单写者处理存档；桥的队列不能代替游戏事务。
-- 独立桥与旧版使用不同的默认目录和角色标识，避免把正在运行的旧游戏内置桥当成独立桥。
-- 游戏 WAL 升级为 v2，直接比较完整状态快照；新事件使用带版本号的 BLAKE2 语义 ID。
-- 启动端只合并同进程内的请求，跨进程的唯一写入实例由桥自身保证。
-
-### Notes & Caveats
-- 从 rc.1 升级：根目录 `npm start` 现在只运行桥，源码游戏接收端改用 `npm run start:receiver`。
-- 插件不再接受 `executable` 与 `exitWhenDisconnected` 选项。用 `nodeExecutable`（命令行 `--node-executable`）指定桥使用的 Node 运行时，`directory` 现在指桥目录，不再是桌宠 userData。
-- 未完成的旧 v1 游戏 WAL 会原样保留并停止自动恢复；旧游戏存档、收据和发件箱不会被删除或自动合并。
-
-## [0.1.0-rc.1] - 2026-10-12
-
-### Features
-- 以 Git submodule 引入原版 dsh-piggy，固定游戏 `0.36.0`；本仓库只维护 OpenCode 兼容代码与文档。
-- 原 Electron 主进程在加载时接入工作桥，窗口、游戏和素材直接使用子模块，不保存修改后的源码副本。
-
-### Design Rationale
-- 上游代码与兼容层分别管理，升级通过子模块指针和明确的接入点调整完成。
-- 保留原版宿主与后台单写者机制，玩法、界面和存档格式保持不变。
-
-### Notes & Caveats
-- 克隆后运行 `git submodule update --init --recursive`；启动入口需要支持 `module.registerHooks` 的 Electron 运行时。
-- 兼容层通过插件脚本启用。
+- 游戏需要包含主线提交 `8f72f17` 的工作事件接口，并以 `--work-events` 启动。
+- `directory` 指插件队列目录，`gameDirectory` 指游戏的 `work-endpoint/` 目录，两者互相独立。

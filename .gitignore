@@ -2,7 +2,6 @@
 node_modules/
 
 # scratch files the plugin writes while running
-.smoke.json*
 *.log
 
 # 本机安装器生成的入口包含交付目录的绝对路径，不随源码提交。
@@ -31,14 +30,9 @@ dist/
 *.p12
 *.pfx
 
-# 运行时发现文件含令牌；队列、收据和存档不随源码提交
-bridge.json
-bridge-owner.json
-work-wal.json
-work-receipts.json
-state.json
-outbox/
-opencode-piggy-bridge/
+# 插件运行数据不随源码提交
+events/
+opencode-piggy-plugin/
 
 # 开发指令、纠错记录及现场证据仅保留在本地
 AGENTS.md
@@ -49,6 +43,4 @@ lessons.md
 docs/ROADMAP.md
 docs/design/
 docs/opencode-*.md
-docs/openpets-reference.md
-packages/opencode-probe/
 tools/

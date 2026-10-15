@@ -1,5 +1,5 @@
 // @ts-check
-/** V2 公共流按位置和语义身份裁剪；只向本地桥交付哈希、事件枚举及时间。 */
+/** V2 公共流按位置和语义身份裁剪；只交付事件标识、类型及时间。 */
 import { createHash } from 'node:crypto'
 import { isAbsolute, resolve } from 'node:path'
 
@@ -137,7 +137,7 @@ export function createEventAdapter(options) {
       scope = await fetchScope(sessionID)
     }
     if (!scope?.isVerified || (semantic.type === 'message' && scope.isTopLevel !== true)) return undefined
-    // 事件 ID 只用于语义去重，不作文件/状态校验；新桥使用独立版本的 BLAKE2 标识。
+    // BLAKE2 语义标识在重连和重启后保持一致，由官方收据去重。
     const id = createHash('blake2s256').update(JSON.stringify(['opencode-piggy:v2', ...semantic.key])).digest('hex')
     if (seen.has(id)) return undefined
     remember(seen, id, true, MAX_EVENTS)

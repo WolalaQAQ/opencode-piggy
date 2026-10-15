@@ -1,45 +1,60 @@
-# 发布 Windows 安装包
+# 打包与发布
 
-Release 工作流构建带 OpenCode 接收适配的 Windows x64 安装包。游戏从仓库记录的 dsh-piggy 子模块提交读取，不构建原客户端，不发布原版游戏的热更新包。
+本仓库只交付一个产物：自包含的 OpenCode 插件。它以 `.tgz` 和 `.zip` 两种归档发布在 GitHub Releases，不发布到 npm。
 
-## 发布前准备
+## 本地打包
 
-1. 将根目录、`packages/opencode-piggy/` 和 `packages/opencode-bridge/` 的 `package.json` 更新为同一个兼容层版本。桌面外壳和上游游戏各自保留自己的版本。
-2. 在 `CHANGELOG.md` 写好对应版本的小节，更新 README 中的版本与必要使用说明。
-3. 初始化固定子模块，在 Windows x64 上准备依赖并检查构建：
+打包需要 Node.js 22.15 或以上和 npm，先安装开发依赖：
 
-   ```sh
-   git submodule update --init --recursive
-   node scripts/prepare-release.mjs
-   npm run check
-   npm run typecheck
-   npm run dist:win
-   ```
-
-   本地构建需要 NSIS 3；`makensis.exe` 不在 PATH 时，用环境变量 `MAKENSIS` 指定完整路径。固定依赖版本在 `scripts/release-dependencies.json`，修改构建依赖时同步更新它。
-
-4. 试用安装包，确认安装、OpenCode 工作联动和卸载行为后再发布。
-
-仓库需要启用 GitHub Actions，并允许工作流写入仓库内容。工作流使用自动提供的 `GITHUB_TOKEN`，无需配置个人访问令牌。
-
-## 标签发布
-
-提交版本改动并推送 `v<兼容层版本>` 标签，例如 `v0.1.0-rc.3`。标签必须与根目录 `package.json` 的版本一致。
-
-工作流读取该标签及固定子模块，准备 Node、Electron 与 NSIS，运行接入点检查和类型检查，再构建安装包。构建成功后创建草稿 Release，上传完整安装包，最后公开 Release。包含 `-` 的版本标签会标记为预发布版。
-
-下载文件名包含游戏和兼容层版本：
-
-```text
-opencode-piggy-setup-game-<游戏版本>-<兼容层版本>-x64.exe
+```sh
+npm install --ignore-scripts
 ```
 
-只上传安装包，不上传解包目录、本机存档或开发记录。安装包未签名。
+`npm run pack:plugin` 用 libarchive 的 `tar`（bsdtar）同时生成 tgz 和 zip。Windows 和 macOS 的系统 `tar` 已经支持；Linux 需要先安装 `bsdtar`，Debian/Ubuntu 上的包名是 `libarchive-tools`。这些只是开发打包的条件，安装和运行插件不需要它们。
 
-## 手动运行与重试
+发布前的版本准备：
 
-在 GitHub 的 **Actions → Release → Run workflow** 中填写已经存在的版本标签。手动运行始终构建该标签的代码，而不是所选分支当前的代码。
+1. 根目录和 `packages/opencode-piggy/package.json` 使用同一版本，例如 `0.2.0-rc.1`。
+2. 中英文 CHANGELOG 有对应版本小节，中英文 README 同步更新。
 
-默认勾选「仅生成草稿」，可先检查产物与发布说明；确认后在 Releases 页面发布草稿，或取消勾选后运行工作流。
+运行检查并打包：
 
-上传失败时 Release 保持草稿，可重跑同一标签的工作流继续上传。已公开的 Release 不会被覆盖；后续修正使用新的版本号和标签。
+```sh
+npm run check
+npm run pack:plugin
+```
+
+产物位于 `dist/`：
+
+```text
+dist/opencode-piggy-0.2.0-rc.1.tgz
+dist/opencode-piggy-0.2.0-rc.1.zip
+```
+
+两个归档内容相同，顶层目录都是 `package/`，里面只有插件代码、`LICENSE` 和 `README`。插件只引用本包文件和 Node 内置模块，使用者不需要安装额外的 Node 才能运行或解包。
+
+## 验证包内容
+
+用 `tar` 查看 tgz 的文件清单，确认没有开发资料或包外依赖：
+
+```sh
+tar -tzf dist/opencode-piggy-0.2.0-rc.1.tgz
+```
+
+然后按[使用指南](opencode.md#安装插件)把归档解压到一个稳定目录，让 OpenCode 加载其中的 `package/`。在游戏关闭时执行一次工作，确认事件进入队列的 `events/`；用 `--work-events` 启动游戏后，事件应在一个重试周期内被投递并从队列消失。游戏需要包含主线提交 `8f72f17`。
+
+## GitHub Release
+
+Release 由 GitHub Actions 的 **Release** 工作流完成，使用自动提供的 `GITHUB_TOKEN`，仓库需要启用 Actions 并允许工作流写入内容。
+
+### 标签发布
+
+提交版本改动后推送 `v<版本>` 标签，例如 `v0.2.0-rc.1`。标签必须与根目录 `package.json` 的版本一致。工作流依次运行 `npm run check` 和打包，创建草稿 Release，上传 `.tgz` 与 `.zip`，最后公开。版本号带 `-` 时标记为预发布。
+
+Release 只包含这两个插件归档，不包含游戏、安装程序或开发记录。
+
+### 手动运行与重试
+
+在 **Actions → Release → Run workflow** 中填写已经存在的版本标签。手动运行始终构建该标签的代码，而不是所选分支当前的代码。
+
+默认勾选「仅生成草稿」，可以先检查产物和发布说明，再到 Releases 页面发布草稿。上传失败时 Release 保持草稿，重跑同一标签即可继续上传。已公开的 Release 不会被覆盖，后续修正使用新的版本号和标签。

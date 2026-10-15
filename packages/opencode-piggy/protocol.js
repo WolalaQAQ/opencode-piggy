@@ -1,5 +1,5 @@
 // @ts-check
-/** 插件、独立桥和游戏接收端共用工作事件协议，不接受工作正文。 */
+/** 官方工作事件的元数据约束，不接受工作正文。 */
 export const EVENT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 export const EVENT_FUTURE_MS = 5 * 60 * 1000
 export const WORK_ID = /^[a-f0-9]{64}$/
@@ -22,14 +22,4 @@ export function validateWorkEvent(value, nowMs) {
   }
   if (event.at < nowMs - EVENT_MAX_AGE_MS) throw workError('event outside receipt window', 422)
   if (event.at > nowMs + EVENT_FUTURE_MS) throw workError('event from future', 422)
-}
-
-/** @param {unknown} value @returns {string} */
-export function validateLease(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw workError('invalid lease', 400)
-  const lease = /** @type {Record<string, any>} */ (value)
-  if (Object.keys(lease).join(',') !== 'id' || typeof lease.id !== 'string' || !WORK_ID.test(lease.id)) {
-    throw workError('invalid lease', 400)
-  }
-  return lease.id
 }

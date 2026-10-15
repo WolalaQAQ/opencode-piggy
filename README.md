@@ -2,133 +2,99 @@
 
 中文 | [English](README.en.md)
 
-OpenCode Piggy 让 [dsh-piggy](https://github.com/CLICGGER-TYPES/dsh-piggy) 桌宠随 OpenCode 的工作成长。OpenCode V2 插件捕获工作事件，交给一个没有窗口的独立后台桥，游戏再按原规则应用这些事件。窗口、玩法、数值、存档、客户端和素材都来自原版 dsh-piggy。插件运行在 OpenCode 服务中，OpenCode Desktop 和 TUI 共用同一套联动。
+OpenCode Piggy 是一个自包含的 OpenCode V2 插件，让 [dsh-piggy](https://github.com/CLICGGER-TYPES/dsh-piggy) 桌宠随你在 OpenCode 里的工作成长。
 
-官方 dsh-piggy 源码从主线提交 `8f72f17` 起提供工作事件接口，可直接配合本仓库的 HTTP 适配器使用，无需修改游戏主进程。已发布的官方 `v0.37.0` 安装包尚未包含该接口；本仓库现有的 Windows x64 安装包仍内置固定版本的游戏和接收适配，安装后即可与 OpenCode 联动。
+插件订阅 OpenCode 服务端的公共事件，把工作记录映射成带稳定 ID 的事件，先异步写入本地持久发件箱，再通过 HTTP 投递给游戏的官方工作事件接口。服务端事件对 OpenCode Desktop 和 TUI 一视同仁，两者共用同一个插件。
 
-| 组件 | 版本 |
+插件不注册模型工具，也不改动模型上下文。小猪由你自己启动；玩法、数值和存档都由游戏管理。
+
+| 组件 | 要求 |
 |---|---|
-| OpenCode Piggy（兼容层） | 0.1.0-rc.3 |
-| dsh-piggy 游戏（固定子模块） | 0.36.1 |
-| 桌面外壳适配 | 0.6.5-rc.2 |
-| OpenCode | V2（Desktop 与 TUI），2.0.26 或以上 |
+| OpenCode | V2，2.0.26 或以上 |
+| dsh-piggy | 包含主线提交 `8f72f17` 的工作事件接口，并以 `--work-events` 启动 |
+| 插件版本 | 0.2.0-rc.1 |
 
-安装包在 [Releases](../../releases) 页面下载。
+## 快速开始
 
-## Windows 安装
+### 1. 获取插件
 
-下载 `opencode-piggy-setup-game-0.36.1-0.1.0-rc.3-x64.exe`，双击运行，按提示选择安装目录。默认目录是 `%LOCALAPPDATA%\Programs\OpenCode Piggy`。安装包没有代码签名，Windows 可能提示未知发布者。
-
-安装包内含游戏、Electron 和独立的 Node 运行时，不需要另外安装 Git、Node 或 npm，也不需要管理员权限。安装会为当前用户启用全局 OpenCode 插件，并创建桌面和开始菜单的 **OpenCode Piggy** 快捷方式。
-
-安装后：
-
-1. 重新加载 OpenCode 项目，插件随之生效，并在需要时启动后台桥。
-2. 双击 **OpenCode Piggy** 快捷方式打开小猪，不用时直接关闭。
-
-插件在 OpenCode 服务中加载，Desktop 和 TUI 无需分别配置：在任一客户端里工作，都会推进小猪。TUI 联动已在 Windows、OpenCode 2.0.27 上验证。
-
-安装不会自动打开小猪。桥跟随插件和 OpenCode 后台服务的生命周期，与小猪窗口是否打开无关；小猪没开着时，工作事件先留在队列里，下次打开后再应用。
-
-升级时先退出小猪，并停止加载了此插件的 OpenCode 后台服务，然后运行新版安装包，选择原安装目录即可覆盖安装。卸载在 Windows 的应用列表或开始菜单中进行。升级和卸载都会保留游戏存档和桥队列。更多细节见[使用指南](docs/guides/opencode.md)。
-
-## 隐私
-
-桥只保存事件 ID、类型、时间和队列元数据，不记录聊天内容、代码或工具输出正文。桥目录里的 `bridge.json` 含有本机认证令牌，反馈问题时不要分享整个目录。
-
-## 平台与源码使用
-
-桌宠安装包面向 Windows x64。在 macOS 和 Linux 上，可以从源码运行 OpenCode 插件与桥。
-
-源码入口需要 Node.js 22.15 或以上，以及 OpenCode V2。
-
-### 只启用插件与桥
-
-插件和桥不需要 Electron，也不需要游戏子模块。在本仓库根目录给一个项目安装：
+在本仓库的 [Releases](https://github.com/WolalaQAQ/opencode-piggy/releases) 下载 `opencode-piggy-0.2.0-rc.1.tgz` 或 `.zip`，两者内容相同，解压后顶层都是 `package/`。把它解压到一个长期保留的目录。macOS 和 Linux：
 
 ```sh
-node scripts/install-opencode.mjs --project="/path/to/your-project"
+mkdir -p ~/opencode-plugins/opencode-piggy
+tar -xzf opencode-piggy-0.2.0-rc.1.tgz -C ~/opencode-plugins/opencode-piggy
 ```
 
-在 OpenCode Desktop 或 TUI 中重新打开项目，插件会连接或启动独立 Node 桥，不会启动或退出小猪。插件引用本机源码目录，启用后不要移动它。全局启用、设置与停用见[使用指南](docs/guides/opencode.md)。
+Windows PowerShell 直接解压 `.zip`：
 
-也可以手动运行桥：
-
-```sh
-npm start
+```powershell
+Expand-Archive opencode-piggy-0.2.0-rc.1.zip -DestinationPath $HOME\opencode-plugins\opencode-piggy
 ```
 
-最后一个插件实例断开后桥退出，未应用的事件保留在队列中。
+解压后的插件目录是目标目录下的 `package/`，例如 `~/opencode-plugins/opencode-piggy/package`。
 
-### 运行固定版本的游戏接收端
+### 2. 在 OpenCode 中启用
 
-准备 Git、游戏子模块和 Electron 依赖：
+在项目的 `opencode.jsonc` 里加入插件项，全局的 `opencode.jsonc` 写法相同：
 
-```sh
-git submodule update --init --recursive
-node scripts/prepare-release.mjs
-npm run check
-npm run start:receiver
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    { "package": "/home/me/opencode-plugins/opencode-piggy/package" }
+  ]
+}
 ```
 
-`prepare-release.mjs` 面向 Windows x64；其他平台请自行准备 `apps/desktop` 的 Electron 依赖。接收端主动连接已有的桥，不启动桥，退出时也不关闭桥。
+路径要写绝对路径，并指向 `package/` 目录。重新加载项目后插件生效，Desktop 和 TUI 都不需要额外设置。插件只使用 Node 内置模块，不需要你另外安装 Node。
 
-### 连接官方源码小猪
+### 3. 启动游戏
 
-另行检出[官方 dsh-piggy 仓库](https://github.com/CLICGGER-TYPES/dsh-piggy)中包含 `8f72f17` 的主线代码。这个入口不使用本仓库固定的 0.36.1 子模块，也不需要本仓库的桌面外壳。
-
-在官方源码的 `apps/desktop` 中准备 Electron 依赖后运行：
+插件只负责投递，游戏需要你自己打开。工作事件接口默认关闭，启动官方 dsh-piggy 时加上 `--work-events`；如果你从官方仓库的源码运行，在安装好依赖的 `apps/desktop` 目录执行：
 
 ```sh
 npm run pack-game
 npx electron . --work-events
 ```
 
-可用 `PIGGY_USERDATA` 指定独立的游戏目录；发现文件位于该目录的 `work-endpoint/endpoint.json`。然后在本仓库为 OpenCode 项目启用插件，并指定游戏的发现目录：
+使用安装版时，在应用的启动参数里加入 `--work-events` 即可。游戏需要包含接口所在的主线提交 `8f72f17`，获取方式见[官方仓库](https://github.com/CLICGGER-TYPES/dsh-piggy)。
 
-```sh
-node scripts/install-opencode.mjs --project="/path/to/isolated-project" --directory="/path/to/isolated-bridge" --game-endpoint="/path/to/userData/work-endpoint"
-```
+之后正常使用 OpenCode，你的工作会被投递给小猪。
 
-重新打开项目后，插件会启动桥和 HTTP 适配器，不会启动小猪；同一 OpenCode 后台服务中的多个项目共用一份适配器。游戏提交并确认后，适配器才向桥补发 ACK。每个桥只支持一个接收者，不要让固定版本接收端和 HTTP 适配器同时连接同一桥。首次使用建议选择独立项目、桥目录和游戏目录；此入口不自动迁移已安装插件、队列或存档。手动启动与停止方式见[使用指南](docs/guides/opencode.md#连接官方源码小猪)。
+## 离线与重试
 
-### 构建 Windows 安装包
+事件先落盘再投递，已持久化的记录在游戏没打开时会保留，游戏重新启动后自动补投。插件每 5 秒重试一次；游戏的接收窗口是 7 天，超过窗口的事件会保留在磁盘上并停止自动投递。事件只有在游戏返回 `applied`、`duplicate` 或 `ignored` 之后才会从发件箱移除，重试始终使用原来的事件 ID，不会重复计数。
 
-在 Windows x64 上准备好上面的依赖和 NSIS 3 编译器。`makensis.exe` 不在 PATH 时，将 `MAKENSIS` 设置为它的完整路径：
+同一个 OpenCode 服务里的多个项目共用一个投递器，最后一个项目卸载插件时才停止。
 
-```powershell
-$env:MAKENSIS = 'C:\Program Files (x86)\NSIS\makensis.exe'
-npm run dist:win
-```
+## 目录与数据
 
-安装包生成在 `dist/`，`win-x64-unpacked/` 是同内容的解包目录。构建复用子模块里已编译的 `client.js`，并把构建所用的 Node 可执行文件及其许可装入桥运行时。
+插件默认在配置根目录下发现游戏的 `dsh-piggy/work-endpoint`，找不到时再尝试源码版的 `dsh-piggy-desktop/work-endpoint`；事件队列默认保存在配置根目录下的 `opencode-piggy-plugin/`。Windows 的配置根目录是 `%APPDATA%`，macOS 是 `~/Library/Application Support`，Linux 是 `$XDG_CONFIG_HOME` 或 `~/.config`。
 
-### 类型检查
+队列的 `events/` 里只保存事件 ID、类型和时间，不含聊天内容、代码或工具输出。游戏自定义了数据目录，或想改队列位置时，参见[使用指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md#配置游戏目录与队列)。反馈问题时请不要分享游戏 `work-endpoint/endpoint.json`，其中含本机认证令牌。
 
-`node scripts/prepare-release.mjs` 同时准备类型检查依赖，然后运行：
+## 使用指南
 
-```sh
-npm run typecheck
-```
+[使用指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md)涵盖手工配置、安装脚本、目录选项、停用和排障；[发布指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/releasing.md)说明如何打包与发布。
 
-## 仓库结构
+## 开发
+
+仓库只包含插件本身：
 
 | 路径 | 内容 |
 |---|---|
-| `upstream/dsh-piggy/` | 原版 Git submodule，固定在游戏 0.36.1 的提交 `329be94` |
-| `packages/opencode-piggy/` | OpenCode V2 插件、事件映射、投递和自动启动 |
-| `packages/opencode-bridge/` | 独立 Node 桥、私有队列、租约和共用协议，不加载游戏 Store |
-| `apps/desktop/` | 游戏接收适配、后台宿主、游戏 WAL 和 Windows 安装配置 |
-| `core.js`、`store.js`、`store/state-file.js` | 兼容导出，全部转发到子模块 |
-| `scripts/` | 启用、启动、接入检查、类型检查和安装包构建 |
-| `.github/workflows/release.yml` | Windows 安装包的标签发布与手动草稿流程 |
+| `packages/opencode-piggy/` | 插件：事件映射、持久发件箱、官方接口发现与 HTTP 投递 |
+| `scripts/` | 安装脚本、类型检查与打包 |
 
-原版的 `assets/`、`src/`、扩展及其文档只存在于子模块。版本变更见 [CHANGELOG](CHANGELOG.md)，维护者的发版步骤见[发布指南](docs/guides/releasing.md)。
+开发依赖只有 TypeScript 和 Node 类型，源码工具使用 Node.js 22.15 或以上：
 
-## 上游版本
+```sh
+npm install --ignore-scripts
+npm run check
+```
 
-`git submodule update --init --recursive` 使用本仓库记录的固定提交，不会自动追随上游最新版本。升级游戏时，先在子模块里选定目标提交，运行 `npm run check` 并验证桌面行为，再在本仓库提交新的子模块指针和必要的适配调整。子模块源码保持不改。
+从源码直接启用插件时，可以在仓库根目录运行 `node scripts/install-opencode.mjs --global`，或用 `--project="/path/to/project"` 只为一个项目启用。版本变化见 [CHANGELOG](https://github.com/WolalaQAQ/opencode-piggy/blob/main/CHANGELOG.md)。
 
 ## 许可
 
-兼容层使用 [MIT](LICENSE) 许可。原版代码、素材和第三方依赖的许可见 [THIRD-PARTY](THIRD-PARTY.md)。
+[MIT](https://github.com/WolalaQAQ/opencode-piggy/blob/main/LICENSE)。

@@ -1,173 +1,156 @@
-# OpenCode 插件与独立工作桥
+# OpenCode 插件使用指南
 
-插件运行在 OpenCode V2 服务中（2.0.26 或以上），订阅服务端的公共事件，捕获工作事件并启动独立 Node 桥。OpenCode Desktop 和 TUI 连接的是同一类服务，所以共用这一套插件与桥，不需要按客户端分别配置。桥没有窗口，不启动或退出小猪。游戏可以使用官方主线源码的工作事件接口，也可以沿用本仓库固定 0.36.1 的接收适配和 Windows 安装包。
+OpenCode Piggy 运行在 OpenCode V2 服务里（2.0.26 或以上）。它订阅服务端公共事件，把工作记录映射成带稳定 ID 的事件，先写入自己的持久发件箱，再通过 HTTP 投递给 dsh-piggy 的官方工作事件接口。Desktop 和 TUI 连接的是同一个服务，因此共用同一个插件，不需要按客户端分别安装。
 
-## Windows 安装
+插件不注册模型工具，不改动模型上下文，也不会替你打开游戏。
 
-运行 Releases 页面下载的 `opencode-piggy-setup-game-0.36.1-0.1.0-rc.3-x64.exe`。默认安装到 `%LOCALAPPDATA%\Programs\OpenCode Piggy`，可在安装界面选择目录，不需要管理员权限。安装包内含完整游戏、Electron 和独立 Node 运行时，安装后离线也能打开小猪。
+## 准备游戏
 
-安装自动写入当前用户的全局 `opencode-piggy.js` 插件入口，不修改 JSON/JSONC；入口引用安装目录内的插件，桥使用内置的 `resources/bridge-node/node.exe`。已有非托管的同名入口不会被覆盖，安装详情会报告冲突。
+游戏需要包含官方主线提交 `8f72f17` 提供的工作事件接口，并在启动时加上 `--work-events`，接口默认关闭。获取方式见[官方仓库](https://github.com/CLICGGER-TYPES/dsh-piggy)。
 
-重新加载 OpenCode 项目后生效，Desktop 和 TUI 都一样。通过桌面或开始菜单中的 **OpenCode Piggy** 启动小猪；关闭小猪不关闭桥，安装本身也不启动小猪。
-
-如果项目中已经启用了源码插件，先在源码仓库停用它，避免全局与项目两处重复启用：
+从官方源码运行时，在安装好依赖的 `apps/desktop` 目录执行：
 
 ```sh
-node scripts/install-opencode.mjs --project="/path/to/your-project" --uninstall
+npm run pack-game
+npx electron . --work-events
 ```
 
-若只想给一个项目启用，先用安装目录内的 Node 停用全局入口，再指定项目安装。PowerShell 示例：
+使用官方安装版时，把 `--work-events` 加到应用的启动参数里。接口只监听本机随机端口并要求令牌认证，发现文件位于游戏数据目录下的 `work-endpoint/endpoint.json`。
+
+## 安装插件
+
+插件是一个自包含目录，只依赖 Node 内置模块。不需要游戏源码、Electron 或另外安装的 Node。
+
+### 使用发布包
+
+从 [Releases](https://github.com/WolalaQAQ/opencode-piggy/releases) 下载 `opencode-piggy-0.2.0-rc.1.tgz` 或 `opencode-piggy-0.2.0-rc.1.zip`。两个归档的内容相同，顶层目录都是 `package/`。选一个稳定的位置解压，之后 OpenCode 会一直从这里加载插件。macOS 和 Linux：
+
+```sh
+mkdir -p /path/to/plugins/opencode-piggy
+tar -xzf opencode-piggy-0.2.0-rc.1.tgz -C /path/to/plugins/opencode-piggy
+```
+
+Windows PowerShell 可以直接解压 `.zip`：
 
 ```powershell
-$install = "$env:LOCALAPPDATA\Programs\OpenCode Piggy"
-& "$install\resources\bridge-node\node.exe" "$install\resources\app\scripts\install-opencode.mjs" --global --uninstall
-& "$install\resources\bridge-node\node.exe" "$install\resources\app\scripts\install-opencode.mjs" --project="C:\path\to\project" "--node-executable=$install\resources\bridge-node\node.exe"
+Expand-Archive opencode-piggy-0.2.0-rc.1.zip -DestinationPath C:\path\to\plugins\opencode-piggy
 ```
 
-更新安装版前退出小猪，并停止加载了此插件的 OpenCode 后台服务，让安装目录内的运行时释放文件。安装目录不能直接移动；需要换目录时先停用插件并卸载，再安装到新位置。
+也可以用系统自带的解压工具。无论哪种方式，插件目录都是解压位置下的 `package/`。
 
-适配外壳使用配套安装包更新，不通过原版的外壳自动更新替换接收适配。已发布的官方 `v0.37.0` 安装包尚未包含外部工作事件接口；使用官方源码的方式见下文。
+OpenCode V2 的 `plugin add` 不接受 tarball，所以需要手工配置。在项目的 `opencode.jsonc` 里写入，全局配置文件的写法相同：
 
-## 启用插件与桥
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    { "package": "/path/to/plugins/opencode-piggy/package" }
+  ]
+}
+```
 
-需要 Node.js 22.15 或以上、OpenCode V2。桥本身不需要 Electron 或游戏子模块。
+路径使用绝对路径。重新加载项目即可生效；如果修改的是未被监听的插件文件，重启 OpenCode 服务（`opencode service restart`）。
 
-在仓库根目录给一个项目安装：
+### 使用安装脚本
+
+从仓库源码使用时，可以让脚本生成自动发现入口。脚本需要 Node.js 22.15 或以上，在仓库根目录执行：
 
 ```sh
 node scripts/install-opencode.mjs --project="/path/to/your-project"
 ```
 
-全局启用使用 `--global`。脚本只管理自己的 `opencode-piggy.js` 自动发现入口，不覆盖 JSON/JSONC 或其他插件。全局位置遵循 `OPENCODE_CONFIG_DIR` 或 `~/.config/opencode/plugins/`，项目位置为 `.opencode/plugins/`。重新打开项目加载插件。入口引用本机源码目录，启用后不要移动或删除它。
+全局启用改用 `--global`。脚本只维护自己创建的 `opencode-piggy.js`，不改写你的 JSON/JSONC 配置或其他插件，也不会覆盖同名的非托管文件。入口写在项目的 `.opencode/plugins/`，全局入口写在 OpenCode 配置目录的 `plugins/` 下（遵循 `OPENCODE_CONFIG_DIR`，否则为 `$XDG_CONFIG_HOME/opencode`，默认 `~/.config/opencode`）。入口引用仓库里的插件目录，启用后不要移动它。
 
-多个项目共用当前用户的一个桥，各自保持生产者租约。最后一个插件实例卸载或租约到期后桥退出，未应用事件保留。OpenCode 后台服务可能在 Desktop 窗口或 TUI 关闭后继续运行，桥不会仅因客户端关闭而立即退出。
+手工配置和安装脚本二选一，同时启用会让插件重复加载。
 
-Desktop 用户直接打开已启用插件的项目；TUI 用户在终端运行：
+## 配置游戏目录与队列
 
-```sh
-opencode "/path/to/your-project"
-```
+插件有两个可选的路径设置，都用绝对路径：
 
-也可以在该项目目录直接运行 `opencode`。小猪仍由用户单独打开，不需要另外启用一份 TUI 插件。
+| 插件选项 | 安装脚本参数 | 用途 |
+|---|---|---|
+| `gameDirectory` | `--game-endpoint` | 游戏的 `work-endpoint/` 目录，也就是 `endpoint.json` 所在目录，不是存档目录 |
+| `directory` | `--directory` | 插件自己的队列目录，事件保存在其中的 `events/` |
 
-手动运行桥：
-
-```sh
-npm start
-```
-
-没有生产者连接的手动桥只保留启动宽限，不永久留在后台。
-
-## 配置
-
-安装命令可加：
-
-- `--directory="/absolute/bridge-home"`：桥的队列和通信目录，不是小猪 userData。
-- `--node-executable="/absolute/node"`：桥的 Node 运行时，不能填写 OpenCode 的 Bun/打包可执行文件或小猪程序。
-- `--game-endpoint="/absolute/game-userData/work-endpoint"`：随插件启动官方工作事件接口的 HTTP 适配器，不启动小猪；对应插件选项 `gameDirectory`。
-- `--no-auto-start`：插件只连接已有桥，不唤醒桥。
-
-桥运行时也识别 `PIGGY_BRIDGE_HOME` 和 `PIGGY_BRIDGE_NODE`。旧 `--executable`、`--exit-disconnected` 及插件 `executable` / `exitWhenDisconnected` 选项已移除。
-
-如自行管理 V2 配置，保留其他配置并使用：
+手工配置示例：
 
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "/path/to/repository/packages/opencode-piggy",
-      "options": { "autoStart": true }
+      "package": "/path/to/plugins/opencode-piggy/package",
+      "options": {
+        "gameDirectory": "/path/to/game-data/work-endpoint",
+        "directory": "/path/to/plugin-data"
+      }
     }
   ]
 }
 ```
 
-手工配置与自动发现入口选一种，不重复启用。
+用安装脚本时对应写成：
 
-## 桥目录与游戏目录
+```sh
+node scripts/install-opencode.mjs --project="/path/to/your-project" --game-endpoint="/path/to/game-data/work-endpoint" --directory="/path/to/plugin-data"
+```
 
-| 系统 | 独立桥默认目录 |
+### 默认位置
+
+不设置选项时，插件先在配置根目录下找安装版的 `dsh-piggy/work-endpoint`；这个发现文件不存在时，再找源码运行使用的 `dsh-piggy-desktop/work-endpoint`。队列保存在配置根目录下的 `opencode-piggy-plugin/`。
+
+| 系统 | 配置根目录 |
 |---|---|
-| Windows | `%APPDATA%/opencode-piggy-bridge` |
-| macOS | `~/Library/Application Support/opencode-piggy-bridge` |
-| Linux | `$XDG_CONFIG_HOME/opencode-piggy-bridge`，默认 `~/.config/opencode-piggy-bridge` |
+| Windows | `%APPDATA%` |
+| macOS | `~/Library/Application Support` |
+| Linux | `$XDG_CONFIG_HOME`，未设置时为 `~/.config` |
 
-桥只保存事件 ID、类型、时间、队列和通信元数据，不保存聊天、代码或工具正文。`bridge.json` 含私有认证令牌，不分享整个目录。
+两种游戏同时运行时优先使用安装版；想连接另一个实例，请明确设置 `gameDirectory`。显式的 `gameDirectory`（或 `--game-endpoint`）总是优先于所有自动发现。
 
-源码游戏接收适配仍使用相应平台的 `opencode-piggy` userData，原格式存档在其 `dsh-piggy/state.json`。游戏 receipts/WAL 留在游戏目录，桥不读写它们。不合并 DSH/普通桌面版存档，也不自动迁入旧内置桥发件箱。
+### 自定义游戏数据目录
 
-## 连接官方源码小猪
+游戏通过环境变量 `PIGGY_USERDATA` 指定数据目录。OpenCode 服务的环境里也能读到这个变量时，插件会使用 `$PIGGY_USERDATA/work-endpoint`。只在启动游戏的终端里设置变量不会改变已经运行的 OpenCode 服务，这种情况请用 `gameDirectory`。
 
-另行检出官方 dsh-piggy 主线中包含 `8f72f17` 的代码，并安装其 `apps/desktop` 依赖。该游戏原生提供工作事件协议 v1；无需复制本仓库的桌面适配、注入主进程或让桥访问游戏存档。
-
-在官方源码的 `apps/desktop` 目录运行。以下 PowerShell 示例使用独立存档目录：
+例如在 PowerShell 中用自定义目录运行官方源码版：
 
 ```powershell
-$env:PIGGY_USERDATA = 'C:\path\to\official-piggy-data'
-npm run pack-game
+$env:PIGGY_USERDATA = 'C:\path\to\game-data'
 npx electron . --work-events
 ```
 
-macOS/Linux 可在启动时使用 `PIGGY_USERDATA=/path/to/official-piggy-data npx electron . --work-events`。工作接口默认关闭；启用后只监听带令牌认证的本机随机端口，发现文件为游戏 userData 下的 `work-endpoint/endpoint.json`。`PIGGY_USERDATA` 是启动游戏时的环境变量，不是插件选项。
+macOS 和 Linux 写作 `PIGGY_USERDATA=/path/to/game-data npx electron . --work-events`。然后把插件的 `gameDirectory` 指向 `/path/to/game-data/work-endpoint`。
 
-在本仓库为一个 OpenCode 项目启用插件，并让 HTTP 适配器随插件运行：
+## 投递与离线
 
-```sh
-node scripts/install-opencode.mjs --project="/path/to/project" --directory="/path/to/bridge-home" --game-endpoint="/path/to/official-piggy-data/work-endpoint"
-```
+插件先把事件写进队列，再投递，所以游戏没有运行时已持久化的记录依然保留。投递失败会每 5 秒重试一次，游戏重新打开后自动补投。官方接收窗口为 7 天，超过窗口的事件会停止自动投递，文件仍留在 `events/` 供检查。
 
-重新打开项目后插件会启动桥和 HTTP 适配器，不会启动小猪。同一 OpenCode 后台服务中，使用相同桥目录和游戏目录的项目共用一份适配器，最后一个相关插件卸载时释放。适配器发现游戏接口后转发队列事件；游戏关闭期间，未确认事件留在桥中，重开后继续投递。相同事件保持原 ID 和时间，游戏重复确认不会重复计数。游戏只有完成持久提交后，适配器才向桥发送确认。
+只有游戏返回 `applied`、`duplicate` 或 `ignored` 时，事件才会从队列移除。重试沿用原来的事件 ID 和时间，同一件事不会被重复计数；事件是否带来成长由游戏规则决定。
 
-也可以不配置安装命令的 `--game-endpoint`，另行手动运行适配器：
+同一个 OpenCode 服务里，使用相同队列和游戏目录的多个项目共用一个投递器，最后一个项目卸载插件时才停止。新项目恰好在上一个投递器关闭期间加载时，会等待关闭完成再接手。一个队列目录对应一套游戏目录，要连接不同的游戏，请为它们设置不同的 `directory`。关闭 Desktop 窗口或 TUI 不一定会停止后台服务，插件停止时尚未投递的事件会留在磁盘上。
 
-```sh
-npm run start:runtime-adapter -- --game-endpoint="/path/to/official-piggy-data/work-endpoint" --bridge-home="/path/to/bridge-home"
-```
+## 隐私
 
-`--directory` 和 `--bridge-home` 是同一个桥目录；`--game-endpoint` 是游戏的发现目录，不是存档文件。一个桥只能连接一个接收者，不能同时运行此适配器和下文的固定版本接收端。首次接入可使用独立项目和目录；已有全局插件时按上文方式选择全局或项目入口，不要重复启用。
+`events/` 里的文件只记录事件 ID、类型和时间，不含聊天内容、代码或工具输出。游戏存档及其收据完全由游戏管理，插件不会读写。`work-endpoint/endpoint.json` 包含本机认证令牌，反馈问题时请不要分享它或整个游戏数据目录。
 
-关闭官方小猪只关闭游戏。插件管理的适配器跟随 OpenCode 后台服务，而不是 Desktop 或 TUI 窗口；手动运行的适配器用 `Ctrl+C` 停止。关闭适配器不退出游戏，桥仍由插件租约管理。此入口不会切换或迁移现有安装版、队列和存档。
+## 停用与更新
 
-## 运行固定版本的游戏接收端
-
-在仓库根目录准备原版子模块和 Electron 运行依赖：
-
-```sh
-git submodule update --init --recursive
-node scripts/prepare-release.mjs
-npm run check
-npm run start:receiver
-```
-
-依赖准备入口用于 Windows x64；其他平台自行准备 `apps/desktop` 的 Electron 依赖。指定目录时使用：
-
-```sh
-npm run start:receiver -- --piggy-opencode-home="/absolute/game-home" --piggy-bridge-home="/absolute/bridge-home"
-```
-
-接收端主动连接桥，不自行启动桥。原 Store、路由、接收器和游戏事务共用后台单写者；窗口、玩法和原格式存档保持不变。游戏持久应用成功才确认，桥入队成功不等于已获得成长。接收端退出不关闭桥，桥退出也不关闭游戏。
-
-未完成的旧 v1 游戏 WAL 不能直接按新快照协议恢复：启动保留原文件并停止自动恢复/接收，不通过删除 WAL 强行继续。已有稳定收据保留；新事件使用新的语义 ID 版本，不追溯重演历史事件。
-
-## 停用
-
-Windows 安装版在系统的应用列表或开始菜单中卸载。卸载会移除指向该安装目录的全局插件入口、快捷方式和程序文件，保留游戏存档、桥队列及其他 OpenCode 配置；若入口已改为引用其他目录，不会删除它。项目级入口需要按安装时使用的项目路径手动停用。
-
-卸载前退出小猪，并停止使用内置桥运行时的 OpenCode 后台服务。安装与卸载不会强行终止其他程序。
-
-源码插件使用：
+手工配置只需删除自己的插件项。用安装脚本启用的，用同样的范围参数加上 `--uninstall`：
 
 ```sh
 node scripts/install-opencode.mjs --project="/path/to/your-project" --uninstall
 ```
 
-全局启用过使用 `--global --uninstall`。手工配置只移除自己的插件项。重新加载项目后插件释放自己的租约，其他项目不受影响；脚本不删除队列或游戏存档，也不关闭小猪。
+全局入口使用 `--global --uninstall`。重新加载对应项目后生效。停用不会关闭小猪，也不会删除队列或游戏存档。
 
-## 官方安装版与平台
+更新发布包时，解压新版本到新的目录并修改配置中的路径，或覆盖原目录后重启 OpenCode 服务。
 
-官方 dsh-piggy 0.36.1 不提供外部工作事件的接入口，扩展 API 也无法喂入工作成长。本仓库现有 Windows 安装包包含接收适配；官方主线源码则从 `8f72f17` 起可使用上文的 HTTP 方式，不需要接收适配版外壳。已发布的官方 `v0.37.0` 安装包尚未包含该接口。外部直接修改 `state.json` 会与常驻内存的 Store 竞争，不作为替代方案。
+## 小猪没有收到工作事件
 
-目前只提供 Windows x64 安装包。macOS 和 Linux 可以从源码运行插件与桥，但还没有做真实的联动验收。
+按下面的顺序检查：
 
-Windows 上，OpenCode 2.0.27 的全屏 TUI 已完成一次真实联动验证：TUI 读取项目文件并回复后，对应的消息、工具和回合各在桥和游戏收据中记录 1 条，桥队列为 0。
+1. **游戏接口**：游戏是否包含 `8f72f17`，并以 `--work-events` 启动。
+2. **发现目录**：游戏数据目录下是否有 `work-endpoint/endpoint.json`。`gameDirectory` 应指向它所在的目录，而不是 JSON 文件或存档目录。
+3. **插件加载**：OpenCode 是否为 V2 的 2.0.26 或以上，项目是否已重新加载，有没有同时存在的全局、项目或手工重复入口。OpenCode 日志中以 `[opencode-piggy]` 开头的行来自插件。
+4. **待投事件**：队列目录的 `events/` 下是否还有事件文件。游戏打开后等一个重试周期；已过 7 天接收窗口的事件不会再自动投递。
+
+插件没有独立的后台进程，排障时只需关注 OpenCode 服务、游戏和队列目录。
