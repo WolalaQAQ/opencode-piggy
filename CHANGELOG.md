@@ -6,6 +6,7 @@
 
 ### Features
 - 增加 OpenCode 独立桥到通用游戏接口的投递适配和手动启动入口，复用现有插件与事件映射。
+- 插件可配置 `gameDirectory`，让 HTTP 适配器随 OpenCode 服务启动；同一服务的多个项目共享接收者，最后一个相关插件卸载后释放。安装命令新增 `--game-endpoint`。
 
 ### Design Rationale
 - 游戏只提供框架无关的接收与提交能力，OpenCode 协议转换和桥生命周期留在适配侧，不再需要包装游戏主进程。

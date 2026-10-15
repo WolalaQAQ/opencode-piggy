@@ -5,8 +5,9 @@ import { bridgeDirectory } from '../opencode-bridge/paths.js'
 import { createBridgeClient } from './bridge-client.js'
 import { createBridgeLauncher } from './standalone-launcher.js'
 import { createEventAdapter } from './event-adapter.js'
+import { retainRuntimeAdapter } from './runtime-adapter.js'
 
-/** @typedef {{directory?:string,nodeExecutable?:string,autoStart?:boolean}} PiggyOptions */
+/** @typedef {{directory?:string,nodeExecutable?:string,autoStart?:boolean,gameDirectory?:string}} PiggyOptions */
 /** @typedef {{app:{version:string},location:{directory:string,workspaceID?:string},options?:unknown,
  * event:{subscribe:(options:{signal:AbortSignal})=>AsyncIterable<unknown>},
  * session?:{get:(input:{sessionID:string},options?:{signal:AbortSignal})=>Promise<unknown>}}} PiggyContext */
@@ -26,7 +27,7 @@ function validateOptions(value) {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new Error('invalid options')
   const options = /** @type {Record<string,unknown>} */ (value)
   for (const [key, option] of Object.entries(options)) {
-    if (key === 'directory' || key === 'nodeExecutable') {
+    if (key === 'directory' || key === 'nodeExecutable' || key === 'gameDirectory') {
       if (typeof option !== 'string' || !option.trim() || option.includes('\0') || !isAbsolute(option)) throw new Error('invalid path option')
     } else if (key === 'autoStart') {
       if (typeof option !== 'boolean') throw new Error('invalid boolean option')
@@ -98,11 +99,12 @@ export function createPiggyPlugin(dependencies = {}) {
   /** @param {PiggyContext} ctx @returns {Promise<()=>Promise<void>>} */
   async function setup(ctx) {
     const controller = new AbortController()
-    let client, adapter, running
+    let client, adapter, running, releaseRuntimeAdapter
     let closing
     async function closeResources() {
       controller.abort()
       try { await running } catch (error) { log('event stream cleanup failed') }
+      try { await releaseRuntimeAdapter?.() } catch (error) { log('game adapter cleanup failed') }
       try { await client?.close() } catch (error) { log('bridge cleanup failed') }
       adapter?.clear()
     }
@@ -117,6 +119,10 @@ export function createPiggyPlugin(dependencies = {}) {
       adapter = createEventAdapter({ location: ctx.location, log,
         fetchSession: ctx.session?.get ? sessionID => ctx.session.get({ sessionID }, { signal: controller.signal }) : undefined })
       await client.start()
+      if (options.gameDirectory) {
+        releaseRuntimeAdapter = retainRuntimeAdapter({ bridgeDirectory: directory,
+          gameDirectory: options.gameDirectory, log })
+      }
       running = consumeEvents({ ctx, controller, adapter, client, log, wait: dependencies.wait ?? waitForReconnect })
         .catch(error => { log('event worker failed'); controller.abort() })
     } catch (error) {

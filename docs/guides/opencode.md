@@ -64,6 +64,7 @@ npm start
 
 - `--directory="/absolute/bridge-home"`：桥的队列和通信目录，不是小猪 userData。
 - `--node-executable="/absolute/node"`：桥的 Node 运行时，不能填写 OpenCode 的 Bun/打包可执行文件或小猪程序。
+- `--game-endpoint="/absolute/game-userData/work-endpoint"`：随插件启动官方工作事件接口的 HTTP 适配器，不启动小猪；对应插件选项 `gameDirectory`。
 - `--no-auto-start`：插件只连接已有桥，不唤醒桥。
 
 桥运行时也识别 `PIGGY_BRIDGE_HOME` 和 `PIGGY_BRIDGE_NODE`。旧 `--executable`、`--exit-disconnected` 及插件 `executable` / `exitWhenDisconnected` 选项已移除。
@@ -110,18 +111,23 @@ npx electron . --work-events
 
 macOS/Linux 可在启动时使用 `PIGGY_USERDATA=/path/to/official-piggy-data npx electron . --work-events`。工作接口默认关闭；启用后只监听带令牌认证的本机随机端口，发现文件为游戏 userData 下的 `work-endpoint/endpoint.json`。`PIGGY_USERDATA` 是启动游戏时的环境变量，不是插件选项。
 
-在本仓库为一个 OpenCode 项目启用插件，再单独运行 HTTP 适配器：
+在本仓库为一个 OpenCode 项目启用插件，并让 HTTP 适配器随插件运行：
 
 ```sh
-node scripts/install-opencode.mjs --project="/path/to/project" --directory="/path/to/bridge-home"
+node scripts/install-opencode.mjs --project="/path/to/project" --directory="/path/to/bridge-home" --game-endpoint="/path/to/official-piggy-data/work-endpoint"
+```
+
+重新打开项目后插件会启动桥和 HTTP 适配器，不会启动小猪。同一 OpenCode 后台服务中，使用相同桥目录和游戏目录的项目共用一份适配器，最后一个相关插件卸载时释放。适配器发现游戏接口后转发队列事件；游戏关闭期间，未确认事件留在桥中，重开后继续投递。相同事件保持原 ID 和时间，游戏重复确认不会重复计数。游戏只有完成持久提交后，适配器才向桥发送确认。
+
+也可以不配置安装命令的 `--game-endpoint`，另行手动运行适配器：
+
+```sh
 npm run start:runtime-adapter -- --game-endpoint="/path/to/official-piggy-data/work-endpoint" --bridge-home="/path/to/bridge-home"
 ```
 
-重新打开项目后插件会启动桥。适配器手动运行，发现游戏接口后转发队列事件；游戏关闭期间，未确认事件留在桥中，重开后继续投递。相同事件保持原 ID 和时间，游戏重复确认不会重复计数。游戏只有完成持久提交后，适配器才向桥发送确认。
-
 `--directory` 和 `--bridge-home` 是同一个桥目录；`--game-endpoint` 是游戏的发现目录，不是存档文件。一个桥只能连接一个接收者，不能同时运行此适配器和下文的固定版本接收端。首次接入可使用独立项目和目录；已有全局插件时按上文方式选择全局或项目入口，不要重复启用。
 
-关闭官方小猪只关闭游戏。适配器用 `Ctrl+C` 停止；关闭它不退出游戏，桥仍由插件租约管理。此入口不会切换或迁移现有安装版、队列和存档，也不提供自动启动适配器的安装流程。
+关闭官方小猪只关闭游戏。插件管理的适配器跟随 OpenCode 后台服务，而不是 Desktop 或 TUI 窗口；手动运行的适配器用 `Ctrl+C` 停止。关闭适配器不退出游戏，桥仍由插件租约管理。此入口不会切换或迁移现有安装版、队列和存档。
 
 ## 运行固定版本的游戏接收端
 

@@ -6,6 +6,7 @@
 
 ### Features
 - Adds a delivery adapter and manual startup entry from the standalone OpenCode bridge to the generic game API, reusing the existing plugin and event mapping.
+- Adds the `gameDirectory` plugin option and installer flag `--game-endpoint` to run the HTTP adapter with the OpenCode service. Projects in the same service share a receiver, released when the last related plugin unloads.
 
 ### Design Rationale
 - The game owns framework-neutral ingestion and commit semantics, while OpenCode conversion and bridge lifecycle remain in the adapter. Integration no longer wraps the game's main process.

@@ -84,14 +84,13 @@ npm run pack-game
 npx electron . --work-events
 ```
 
-可用 `PIGGY_USERDATA` 指定独立的游戏目录；发现文件位于该目录的 `work-endpoint/endpoint.json`。然后在本仓库为 OpenCode 项目启用插件、启动投递适配器：
+可用 `PIGGY_USERDATA` 指定独立的游戏目录；发现文件位于该目录的 `work-endpoint/endpoint.json`。然后在本仓库为 OpenCode 项目启用插件，并指定游戏的发现目录：
 
 ```sh
-node scripts/install-opencode.mjs --project="/path/to/isolated-project" --directory="/path/to/isolated-bridge"
-npm run start:runtime-adapter -- --game-endpoint="/path/to/userData/work-endpoint" --bridge-home="/path/to/isolated-bridge"
+node scripts/install-opencode.mjs --project="/path/to/isolated-project" --directory="/path/to/isolated-bridge" --game-endpoint="/path/to/userData/work-endpoint"
 ```
 
-`--directory` 和 `--bridge-home` 必须指向同一个桥目录，`--game-endpoint` 则是官方游戏的发现目录。游戏提交并确认后，适配器才向桥补发 ACK。每个桥只支持一个接收者，不要让固定版本接收端和 HTTP 适配器同时连接同一桥。首次使用建议选择独立项目、桥目录和游戏目录；此入口不自动迁移已安装插件、队列或存档。启动与停止方式见[使用指南](docs/guides/opencode.md#连接官方源码小猪)。
+重新打开项目后，插件会启动桥和 HTTP 适配器，不会启动小猪；同一 OpenCode 后台服务中的多个项目共用一份适配器。游戏提交并确认后，适配器才向桥补发 ACK。每个桥只支持一个接收者，不要让固定版本接收端和 HTTP 适配器同时连接同一桥。首次使用建议选择独立项目、桥目录和游戏目录；此入口不自动迁移已安装插件、队列或存档。手动启动与停止方式见[使用指南](docs/guides/opencode.md#连接官方源码小猪)。
 
 ### 构建 Windows 安装包
 

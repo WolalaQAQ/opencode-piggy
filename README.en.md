@@ -84,14 +84,13 @@ npm run pack-game
 npx electron . --work-events
 ```
 
-Set `PIGGY_USERDATA` to select a separate game directory. Discovery is published to `work-endpoint/endpoint.json` inside that directory. Then, from this repository, enable the OpenCode plugin and start the delivery adapter:
+Set `PIGGY_USERDATA` to select a separate game directory. Discovery is published to `work-endpoint/endpoint.json` inside that directory. Then, from this repository, enable the OpenCode plugin and specify the game's discovery directory:
 
 ```sh
-node scripts/install-opencode.mjs --project="/path/to/isolated-project" --directory="/path/to/isolated-bridge"
-npm run start:runtime-adapter -- --game-endpoint="/path/to/userData/work-endpoint" --bridge-home="/path/to/isolated-bridge"
+node scripts/install-opencode.mjs --project="/path/to/isolated-project" --directory="/path/to/isolated-bridge" --game-endpoint="/path/to/userData/work-endpoint"
 ```
 
-`--directory` and `--bridge-home` must select the same bridge directory; `--game-endpoint` selects the official game's discovery directory. The adapter acknowledges the bridge only after the game confirms its commit. Each bridge allows one receiver; do not connect the pinned game receiver and the HTTP adapter to the same bridge. Use a separate project, bridge directory and game directory for an initial setup. This entrypoint does not migrate installed plugins, queues or saves automatically. See the [usage guide](docs/guides/opencode.md#连接官方源码小猪) (Chinese) for starting and stopping it.
+Reopen the project to start the bridge and HTTP adapter with the plugin; the pet is never started automatically. Projects in the same OpenCode service share one adapter. The adapter acknowledges the bridge only after the game confirms its commit. Each bridge allows one receiver; do not connect the pinned game receiver and the HTTP adapter to the same bridge. Use a separate project, bridge directory and game directory for an initial setup. This entrypoint does not migrate installed plugins, queues or saves automatically. See the [usage guide](docs/guides/opencode.md#连接官方源码小猪) (Chinese) for manual startup and shutdown.
 
 ### Build the Windows installer
 

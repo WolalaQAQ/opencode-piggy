@@ -40,6 +40,7 @@ function main() {
   const options = {
     ...(value('--directory') ? { directory: resolve(value('--directory')) } : {}),
     ...(value('--node-executable') ? { nodeExecutable: resolve(value('--node-executable')) } : {}),
+    ...(value('--game-endpoint') ? { gameDirectory: resolve(value('--game-endpoint')) } : {}),
     ...(args.includes('--no-auto-start') ? { autoStart: false } : {}),
   }
   console.log(installOpenCode({ target, uninstall: args.includes('--uninstall'), ownedOnly: args.includes('--owned-only'), options }))
