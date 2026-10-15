@@ -1,5 +1,5 @@
 // @ts-check
-/** 手动运行原型适配器；现有插件、桥和已安装桌宠不自动切换。 */
+/** 手动运行官方工作事件接口适配器；现有插件、桥和已安装桌宠不自动切换。 */
 import { resolve } from 'node:path'
 import { createRuntimeAdapter } from '../packages/opencode-piggy/runtime-adapter.js'
 import { bridgeDirectory } from '../packages/opencode-bridge/paths.js'

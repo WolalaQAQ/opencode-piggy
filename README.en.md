@@ -4,7 +4,7 @@
 
 OpenCode Piggy lets the [dsh-piggy](https://github.com/CLICGGER-TYPES/dsh-piggy) desktop pet grow with your OpenCode work. An OpenCode V2 plugin captures work events and hands them to a standalone background bridge that has no window. The game then applies them under its original rules. The window, gameplay, numbers, save format, client and art all come from the original dsh-piggy. The plugin runs inside the OpenCode service, so OpenCode Desktop and the TUI share the same integration.
 
-The official dsh-piggy installer has no entry point for external work events, so this repository ships its own Windows x64 installer. It bundles the pinned game version together with the receiving adaptation, and works with OpenCode right after installation.
+Official dsh-piggy source includes a work-event API from main commit `8f72f17`. It works with this repository's HTTP adapter without modifying the game's main process. Published official `v0.37.0` installers do not include that API. This repository's existing Windows x64 installer still bundles the pinned game version and receiving adaptation for use with OpenCode after installation.
 
 | Component | Version |
 |---|---|
@@ -60,7 +60,7 @@ npm start
 
 The bridge exits after the last plugin instance disconnects. Events that have not been applied stay in the queue.
 
-### Run the game receiver from source
+### Run the pinned game receiver
 
 Prepare Git, the game submodule and the Electron dependencies:
 
@@ -73,18 +73,25 @@ npm run start:receiver
 
 `prepare-release.mjs` targets Windows x64; on other platforms, prepare the Electron dependencies of `apps/desktop` yourself. The receiver connects to a running bridge. It does not start the bridge and does not stop it on exit.
 
-### Generic game-interface prototype
+### Connect to the official game source
 
-The `feat/agent-runtime-prototype` branch also includes an OpenCode delivery adapter for the [generic game-runtime prototype](https://github.com/WolalaQAQ/dsh-piggy/tree/feat/agent-runtime-prototype). It reuses this repository's plugin and standalone bridge and talks to the game's local work-event API without injecting the desktop main process.
+Check out the [official dsh-piggy repository](https://github.com/CLICGGER-TYPES/dsh-piggy) separately at a main commit containing `8f72f17`. This path does not use this repository's pinned 0.36.1 submodule or its desktop shell.
 
-Prepare Electron dependencies in the prototype game checkout, select a separate userData directory and run `npm start -- --work-events`. Discovery is published to `work-endpoint/endpoint.json` inside that userData directory. Install the plugin for a separate OpenCode project with an isolated bridge directory, then run:
+After installing Electron dependencies in the official checkout's `apps/desktop`, run:
+
+```sh
+npm run pack-game
+npx electron . --work-events
+```
+
+Set `PIGGY_USERDATA` to select a separate game directory. Discovery is published to `work-endpoint/endpoint.json` inside that directory. Then, from this repository, enable the OpenCode plugin and start the delivery adapter:
 
 ```sh
 node scripts/install-opencode.mjs --project="/path/to/isolated-project" --directory="/path/to/isolated-bridge"
 npm run start:runtime-adapter -- --game-endpoint="/path/to/userData/work-endpoint" --bridge-home="/path/to/isolated-bridge"
 ```
 
-The adapter acknowledges the bridge only after the game confirms its commit. Each bridge allows one receiver; do not connect both the original game receiver and the generic adapter to the same bridge. The prototype does not replace installed plugins, queues or game saves.
+`--directory` and `--bridge-home` must select the same bridge directory; `--game-endpoint` selects the official game's discovery directory. The adapter acknowledges the bridge only after the game confirms its commit. Each bridge allows one receiver; do not connect the pinned game receiver and the HTTP adapter to the same bridge. Use a separate project, bridge directory and game directory for an initial setup. This entrypoint does not migrate installed plugins, queues or saves automatically. See the [usage guide](docs/guides/opencode.md#连接官方源码小猪) (Chinese) for starting and stopping it.
 
 ### Build the Windows installer
 

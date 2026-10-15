@@ -2,16 +2,16 @@
 
 [中文](CHANGELOG.md) | English
 
-## [Unreleased] - 2026-10-14
+## [Unreleased] - 2026-10-16
 
 ### Features
 - Adds a delivery adapter and manual startup entry from the standalone OpenCode bridge to the generic game API, reusing the existing plugin and event mapping.
 
 ### Design Rationale
-- The game owns framework-neutral ingestion and commit semantics, while OpenCode conversion and bridge lifecycle remain in the adapter. Prototype integration no longer wraps the game's main process.
+- The game owns framework-neutral ingestion and commit semantics, while OpenCode conversion and bridge lifecycle remain in the adapter. Integration no longer wraps the game's main process.
 
 ### Notes & Caveats
-- The generic adapter requires the prototype game with work-event protocol v1. Existing installer and source receiver entrypoints are unchanged. Do not connect two receivers to the same bridge.
+- The HTTP adapter connects to official dsh-piggy main source containing `8f72f17`, with `--work-events` explicitly enabled. The existing installer, pinned submodule and receiver entrypoints are unchanged. Connect only one receiver to each bridge.
 
 ## [0.1.0-rc.3] - 2026-10-12
 

@@ -4,7 +4,7 @@
 
 OpenCode Piggy 让 [dsh-piggy](https://github.com/CLICGGER-TYPES/dsh-piggy) 桌宠随 OpenCode 的工作成长。OpenCode V2 插件捕获工作事件，交给一个没有窗口的独立后台桥，游戏再按原规则应用这些事件。窗口、玩法、数值、存档、客户端和素材都来自原版 dsh-piggy。插件运行在 OpenCode 服务中，OpenCode Desktop 和 TUI 共用同一套联动。
 
-dsh-piggy 官方安装包没有接收外部工作事件的入口，所以本仓库提供自己的 Windows x64 安装包：它内置固定版本的游戏和接收适配，安装后即可与 OpenCode 联动。
+官方 dsh-piggy 源码从主线提交 `8f72f17` 起提供工作事件接口，可直接配合本仓库的 HTTP 适配器使用，无需修改游戏主进程。已发布的官方 `v0.37.0` 安装包尚未包含该接口；本仓库现有的 Windows x64 安装包仍内置固定版本的游戏和接收适配，安装后即可与 OpenCode 联动。
 
 | 组件 | 版本 |
 |---|---|
@@ -60,7 +60,7 @@ npm start
 
 最后一个插件实例断开后桥退出，未应用的事件保留在队列中。
 
-### 运行源码游戏接收端
+### 运行固定版本的游戏接收端
 
 准备 Git、游戏子模块和 Electron 依赖：
 
@@ -73,18 +73,25 @@ npm run start:receiver
 
 `prepare-release.mjs` 面向 Windows x64；其他平台请自行准备 `apps/desktop` 的 Electron 依赖。接收端主动连接已有的桥，不启动桥，退出时也不关闭桥。
 
-### 通用游戏接口原型
+### 连接官方源码小猪
 
-`feat/agent-runtime-prototype` 分支还提供面向[通用游戏运行时原型](https://github.com/WolalaQAQ/dsh-piggy/tree/feat/agent-runtime-prototype)的 OpenCode 投递适配。它复用本仓库的插件和独立桥，通过本机工作事件接口接入游戏，不注入桌面主进程。
+另行检出[官方 dsh-piggy 仓库](https://github.com/CLICGGER-TYPES/dsh-piggy)中包含 `8f72f17` 的主线代码。这个入口不使用本仓库固定的 0.36.1 子模块，也不需要本仓库的桌面外壳。
 
-在原型游戏源码中准备 Electron 依赖，使用独立 userData，并通过 `npm start -- --work-events` 启动。发现文件位于该 userData 的 `work-endpoint/endpoint.json`。为独立 OpenCode 项目安装插件时，用 `--directory` 指定隔离桥目录，然后运行：
+在官方源码的 `apps/desktop` 中准备 Electron 依赖后运行：
+
+```sh
+npm run pack-game
+npx electron . --work-events
+```
+
+可用 `PIGGY_USERDATA` 指定独立的游戏目录；发现文件位于该目录的 `work-endpoint/endpoint.json`。然后在本仓库为 OpenCode 项目启用插件、启动投递适配器：
 
 ```sh
 node scripts/install-opencode.mjs --project="/path/to/isolated-project" --directory="/path/to/isolated-bridge"
 npm run start:runtime-adapter -- --game-endpoint="/path/to/userData/work-endpoint" --bridge-home="/path/to/isolated-bridge"
 ```
 
-游戏提交并确认后，适配器才向桥补发 ACK。每个桥只支持一个接收者，原游戏接收端和通用接口适配器不要同时连接同一桥。原型不替换已安装插件、队列或游戏存档。
+`--directory` 和 `--bridge-home` 必须指向同一个桥目录，`--game-endpoint` 则是官方游戏的发现目录。游戏提交并确认后，适配器才向桥补发 ACK。每个桥只支持一个接收者，不要让固定版本接收端和 HTTP 适配器同时连接同一桥。首次使用建议选择独立项目、桥目录和游戏目录；此入口不自动迁移已安装插件、队列或存档。启动与停止方式见[使用指南](docs/guides/opencode.md#连接官方源码小猪)。
 
 ### 构建 Windows 安装包
 

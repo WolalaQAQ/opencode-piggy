@@ -1,6 +1,6 @@
 # OpenCode 插件与独立工作桥
 
-插件运行在 OpenCode V2 服务中（2.0.26 或以上），订阅服务端的公共事件，捕获工作事件并启动独立 Node 桥。OpenCode Desktop 和 TUI 连接的是同一类服务，所以共用这一套插件与桥，不需要按客户端分别配置。桥没有窗口，不启动或退出小猪。游戏固定为 0.36.1，游戏侧接收适配支持源码运行和 Windows 安装包。
+插件运行在 OpenCode V2 服务中（2.0.26 或以上），订阅服务端的公共事件，捕获工作事件并启动独立 Node 桥。OpenCode Desktop 和 TUI 连接的是同一类服务，所以共用这一套插件与桥，不需要按客户端分别配置。桥没有窗口，不启动或退出小猪。游戏可以使用官方主线源码的工作事件接口，也可以沿用本仓库固定 0.36.1 的接收适配和 Windows 安装包。
 
 ## Windows 安装
 
@@ -26,7 +26,7 @@ $install = "$env:LOCALAPPDATA\Programs\OpenCode Piggy"
 
 更新安装版前退出小猪，并停止加载了此插件的 OpenCode 后台服务，让安装目录内的运行时释放文件。安装目录不能直接移动；需要换目录时先停用插件并卸载，再安装到新位置。
 
-适配外壳使用配套安装包更新，不通过原版的外壳自动更新替换接收适配。官方安装版仍不具备外部工作事件接入口。
+适配外壳使用配套安装包更新，不通过原版的外壳自动更新替换接收适配。已发布的官方 `v0.37.0` 安装包尚未包含外部工作事件接口；使用官方源码的方式见下文。
 
 ## 启用插件与桥
 
@@ -96,7 +96,34 @@ npm start
 
 源码游戏接收适配仍使用相应平台的 `opencode-piggy` userData，原格式存档在其 `dsh-piggy/state.json`。游戏 receipts/WAL 留在游戏目录，桥不读写它们。不合并 DSH/普通桌面版存档，也不自动迁入旧内置桥发件箱。
 
-## 运行源码游戏接收端
+## 连接官方源码小猪
+
+另行检出官方 dsh-piggy 主线中包含 `8f72f17` 的代码，并安装其 `apps/desktop` 依赖。该游戏原生提供工作事件协议 v1；无需复制本仓库的桌面适配、注入主进程或让桥访问游戏存档。
+
+在官方源码的 `apps/desktop` 目录运行。以下 PowerShell 示例使用独立存档目录：
+
+```powershell
+$env:PIGGY_USERDATA = 'C:\path\to\official-piggy-data'
+npm run pack-game
+npx electron . --work-events
+```
+
+macOS/Linux 可在启动时使用 `PIGGY_USERDATA=/path/to/official-piggy-data npx electron . --work-events`。工作接口默认关闭；启用后只监听带令牌认证的本机随机端口，发现文件为游戏 userData 下的 `work-endpoint/endpoint.json`。`PIGGY_USERDATA` 是启动游戏时的环境变量，不是插件选项。
+
+在本仓库为一个 OpenCode 项目启用插件，再单独运行 HTTP 适配器：
+
+```sh
+node scripts/install-opencode.mjs --project="/path/to/project" --directory="/path/to/bridge-home"
+npm run start:runtime-adapter -- --game-endpoint="/path/to/official-piggy-data/work-endpoint" --bridge-home="/path/to/bridge-home"
+```
+
+重新打开项目后插件会启动桥。适配器手动运行，发现游戏接口后转发队列事件；游戏关闭期间，未确认事件留在桥中，重开后继续投递。相同事件保持原 ID 和时间，游戏重复确认不会重复计数。游戏只有完成持久提交后，适配器才向桥发送确认。
+
+`--directory` 和 `--bridge-home` 是同一个桥目录；`--game-endpoint` 是游戏的发现目录，不是存档文件。一个桥只能连接一个接收者，不能同时运行此适配器和下文的固定版本接收端。首次接入可使用独立项目和目录；已有全局插件时按上文方式选择全局或项目入口，不要重复启用。
+
+关闭官方小猪只关闭游戏。适配器用 `Ctrl+C` 停止；关闭它不退出游戏，桥仍由插件租约管理。此入口不会切换或迁移现有安装版、队列和存档，也不提供自动启动适配器的安装流程。
+
+## 运行固定版本的游戏接收端
 
 在仓库根目录准备原版子模块和 Electron 运行依赖：
 
@@ -133,7 +160,7 @@ node scripts/install-opencode.mjs --project="/path/to/your-project" --uninstall
 
 ## 官方安装版与平台
 
-官方 dsh-piggy 0.36.1 不提供外部工作事件的接入口，扩展 API 也无法喂入工作成长。本仓库的 Windows 安装包包含接收适配，不是未经适配的官方原包，官方安装版不能直接与 OpenCode 联动。外部直接修改 `state.json` 会与常驻内存的 Store 竞争，不作为替代方案。
+官方 dsh-piggy 0.36.1 不提供外部工作事件的接入口，扩展 API 也无法喂入工作成长。本仓库现有 Windows 安装包包含接收适配；官方主线源码则从 `8f72f17` 起可使用上文的 HTTP 方式，不需要接收适配版外壳。已发布的官方 `v0.37.0` 安装包尚未包含该接口。外部直接修改 `state.json` 会与常驻内存的 Store 竞争，不作为替代方案。
 
 目前只提供 Windows x64 安装包。macOS 和 Linux 可以从源码运行插件与桥，但还没有做真实的联动验收。
 
