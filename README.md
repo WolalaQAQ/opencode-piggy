@@ -12,43 +12,23 @@ OpenCode Piggy 是一个自包含的 OpenCode V2 插件，让 [dsh-piggy](https:
 |---|---|
 | OpenCode | V2，2.0.26 或以上 |
 | dsh-piggy | 包含主线提交 `8f72f17` 的工作事件接口，并以 `--work-events` 启动 |
-| 插件版本 | 0.2.0-rc.1 |
+| 插件版本 | 0.2.0-rc.2 |
 
 ## 快速开始
 
-### 1. 获取插件
+### 1. 安装插件
 
-在本仓库的 [Releases](https://github.com/WolalaQAQ/opencode-piggy/releases) 下载 `opencode-piggy-0.2.0-rc.1.tgz` 或 `.zip`，两者内容相同，解压后顶层都是 `package/`。把它解压到一个长期保留的目录。macOS 和 Linux：
+用 OpenCode V2 的命令行从 npm 安装预发布通道 `next`：
 
 ```sh
-mkdir -p ~/opencode-plugins/opencode-piggy
-tar -xzf opencode-piggy-0.2.0-rc.1.tgz -C ~/opencode-plugins/opencode-piggy
+opencode plugin add opencode-piggy@next
 ```
 
-Windows PowerShell 直接解压 `.zip`：
+命令默认安装为全局插件并写入配置，不需要手动下载、解压或修改 JSON。重新加载项目后插件生效，Desktop 和 TUI 都不需要额外设置。插件只使用 Node 内置模块。
 
-```powershell
-Expand-Archive opencode-piggy-0.2.0-rc.1.zip -DestinationPath $HOME\opencode-plugins\opencode-piggy
-```
+`next` 是预发布通道，随新的预发布版本前移；要固定版本，安装 `opencode-piggy@0.2.0-rc.2`。固定版本不会自动跳到下一个版本。不使用 npm 时，可以改用 GitHub 目标 `github:WolalaQAQ/opencode-piggy#v0.2.0-rc.2::path:packages/opencode-piggy`，见[使用指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md#用命令行安装)。
 
-解压后的插件目录是目标目录下的 `package/`，例如 `~/opencode-plugins/opencode-piggy/package`。
-
-### 2. 在 OpenCode 中启用
-
-在项目的 `opencode.jsonc` 里加入插件项，全局的 `opencode.jsonc` 写法相同：
-
-```jsonc
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugins": [
-    { "package": "/home/me/opencode-plugins/opencode-piggy/package" }
-  ]
-}
-```
-
-路径要写绝对路径，并指向 `package/` 目录。重新加载项目后插件生效，Desktop 和 TUI 都不需要额外设置。插件只使用 Node 内置模块，不需要你另外安装 Node。
-
-### 3. 启动游戏
+### 2. 启动游戏
 
 插件只负责投递，游戏需要你自己打开。工作事件接口默认关闭，启动官方 dsh-piggy 时加上 `--work-events`；如果你从官方仓库的源码运行，在安装好依赖的 `apps/desktop` 目录执行：
 
@@ -59,7 +39,7 @@ npx electron . --work-events
 
 使用安装版时，在应用的启动参数里加入 `--work-events` 即可。游戏需要包含接口所在的主线提交 `8f72f17`，获取方式见[官方仓库](https://github.com/CLICGGER-TYPES/dsh-piggy)。
 
-之后正常使用 OpenCode，你的工作会被投递给小猪。
+之后正常使用 OpenCode，你的工作会被投递给小猪。只想在某个项目里启用、离线安装发布包或自定义目录时，参见[使用指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md)。
 
 ## 离线与重试
 
@@ -75,7 +55,7 @@ npx electron . --work-events
 
 ## 使用指南
 
-[使用指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md)涵盖手工配置、安装脚本、目录选项、停用和排障；[发布指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/releasing.md)说明如何打包与发布。
+[使用指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md)涵盖 CLI 安装与停用、项目级配置、离线安装、目录选项和排障；[发布指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/releasing.md)说明如何打包与发布。
 
 ## 开发
 

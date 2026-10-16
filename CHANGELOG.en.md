@@ -2,6 +2,21 @@
 
 [中文](CHANGELOG.md) | English
 
+## [0.2.0-rc.2] - 2026-10-16
+
+### Features
+- The plugin is published to npm as the prerelease package `opencode-piggy` on the `next` tag. Install it with `opencode plugin add opencode-piggy@next`, and update or remove it with `plugin update` and `plugin remove`. To pin a version, install `opencode-piggy@0.2.0-rc.2`.
+- Without npm, you can still install from the Git subdirectory target `github:WolalaQAQ/opencode-piggy#v0.2.0-rc.2::path:packages/opencode-piggy`; the `.tgz` and `.zip` archives on GitHub Releases are for offline installation.
+- Event mapping, delivery, offline retries and directory discovery are the same as in 0.2.0-rc.1, and the game requirements are unchanged.
+
+### Design Rationale
+- Downloading, writing configuration and updating are left to OpenCode's plugin management, so users no longer extract archives or edit JSON by hand.
+- Prereleases live on the `next` tag and leave npm's default `latest` tag alone; a stable release will use a new version number published to `latest`.
+
+### Notes & Caveats
+- The game must still include the work-event API from main commit `8f72f17` and be started with `--work-events`.
+- A pinned install target does not move to the next version by itself; reinstall with the new version number.
+
 ## [0.2.0-rc.1] - 2026-10-16
 
 ### Features

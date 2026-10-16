@@ -2,6 +2,21 @@
 
 中文 | [English](CHANGELOG.en.md)
 
+## [0.2.0-rc.2] - 2026-10-16
+
+### Features
+- 插件以预发布版本发布到 npm 的 `next` 通道，包名 `opencode-piggy`。用 `opencode plugin add opencode-piggy@next` 安装，用 `plugin update`、`plugin remove` 更新和移除；需要固定版本时安装 `opencode-piggy@0.2.0-rc.2`。
+- 不使用 npm 时，仍可通过 Git 子目录目标 `github:WolalaQAQ/opencode-piggy#v0.2.0-rc.2::path:packages/opencode-piggy` 安装，GitHub Releases 的 `.tgz` 和 `.zip` 归档用于离线安装。
+- 事件映射、投递、离线重试和目录发现与 0.2.0-rc.1 相同，游戏要求不变。
+
+### Design Rationale
+- 下载、配置写入和更新交给 OpenCode 的插件管理，用户不必再手动解压或修改 JSON。
+- 预发布版本放在 `next` 通道，不占用 npm 默认的 `latest`；正式版使用新的版本号，发布到 `latest` 时再转正。
+
+### Notes & Caveats
+- 游戏仍需包含主线提交 `8f72f17` 的工作事件接口，并以 `--work-events` 启动。
+- 固定版本的安装目标不会自动跳到下一个版本，需要换成新版本号重新安装。
+
 ## [0.2.0-rc.1] - 2026-10-16
 
 ### Features

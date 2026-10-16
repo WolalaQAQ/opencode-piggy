@@ -25,14 +25,18 @@ try {
   const chinese = changelogSection('CHANGELOG.md')
   const english = changelogSection('CHANGELOG.en.md')
   const base = `${plugin.name}-${version}`
+  const channel = version.includes('-') ? 'next' : 'latest'
+  const install = `opencode plugin add ${plugin.name}@${channel}`
   const downloads = ['tgz', 'zip'].map(extension => {
     const name = `${base}.${extension}`
     return `- [${name}](${repository}/releases/download/${tag}/${name})`
   }).join('\n')
-  console.log(`# 中文\n\n${chinese}\n\n### 下载与使用\n\n${downloads}\n\n` +
+  console.log(`# 中文\n\n${chinese}\n\n### 安装\n\n\`\`\`sh\n${install}\n\`\`\`\n\n` +
+    `### 离线归档\n\n${downloads}\n\n` +
     '下载任一压缩包并解压，将 OpenCode 配置中插件项的 `package` 指向解压后 `package/` 目录的绝对路径。\n\n' +
     `游戏要求与配置方法见 [README](${repository}/blob/${tag}/README.md)。\n\n---\n\n` +
-    `# English\n\n${english}\n\n### Download and use\n\n${downloads}\n\n` +
+    `# English\n\n${english}\n\n### Install\n\n\`\`\`sh\n${install}\n\`\`\`\n\n` +
+    `### Offline archives\n\n${downloads}\n\n` +
     'Extract either archive and set the plugin entry’s `package` in your OpenCode configuration to the absolute path of the extracted `package/` directory.\n\n' +
     `See the [README](${repository}/blob/${tag}/README.en.md) for game requirements and configuration.`)
 } catch (error) { console.error(error.message); process.exitCode = 1 }

@@ -12,43 +12,23 @@ The plugin registers no model tools and does not change model context. You start
 |---|---|
 | OpenCode | V2, 2.0.26 or later |
 | dsh-piggy | Work-event API from main commit `8f72f17`, started with `--work-events` |
-| Plugin version | 0.2.0-rc.1 |
+| Plugin version | 0.2.0-rc.2 |
 
 ## Quick start
 
-### 1. Get the plugin
+### 1. Install the plugin
 
-Download `opencode-piggy-0.2.0-rc.1.tgz` or `.zip` from this repository's [Releases](https://github.com/WolalaQAQ/opencode-piggy/releases). Both contain the same files with a top-level `package/` directory. Extract it to a directory you will keep. On macOS and Linux:
+Install the `next` prerelease tag from npm with the OpenCode V2 CLI:
 
 ```sh
-mkdir -p ~/opencode-plugins/opencode-piggy
-tar -xzf opencode-piggy-0.2.0-rc.1.tgz -C ~/opencode-plugins/opencode-piggy
+opencode plugin add opencode-piggy@next
 ```
 
-On Windows PowerShell, extract the `.zip` directly:
+The command installs a global plugin and writes the configuration for you; there is nothing to download, extract or edit by hand. Reload your project and the plugin takes effect; Desktop and the TUI need no extra setup. The plugin uses only Node built-in modules.
 
-```powershell
-Expand-Archive opencode-piggy-0.2.0-rc.1.zip -DestinationPath $HOME\opencode-plugins\opencode-piggy
-```
+`next` is the prerelease channel and moves forward with new prereleases; to pin a version, install `opencode-piggy@0.2.0-rc.2`. A pinned version does not move to the next one by itself. Without npm, use the GitHub target `github:WolalaQAQ/opencode-piggy#v0.2.0-rc.2::path:packages/opencode-piggy` instead; see the [usage guide](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md#用命令行安装) (Chinese).
 
-The plugin directory is the `package/` folder inside the target directory, for example `~/opencode-plugins/opencode-piggy/package`.
-
-### 2. Enable it in OpenCode
-
-Add the plugin to your project's `opencode.jsonc`. The global `opencode.jsonc` uses the same syntax:
-
-```jsonc
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugins": [
-    { "package": "/home/me/opencode-plugins/opencode-piggy/package" }
-  ]
-}
-```
-
-Use an absolute path to the `package/` directory. Reload the project and the plugin takes effect; Desktop and the TUI need no extra setup. The plugin uses only Node built-in modules, so you do not need to install Node separately.
-
-### 3. Start the game
+### 2. Start the game
 
 The plugin only delivers events; you open the game yourself. The work-event API is off by default, so start the official dsh-piggy with `--work-events`. From the official source, run this in `apps/desktop` after installing its dependencies:
 
@@ -59,7 +39,7 @@ npx electron . --work-events
 
 With an installed build, add `--work-events` to the app's launch arguments. The game must include main commit `8f72f17`; see the [official repository](https://github.com/CLICGGER-TYPES/dsh-piggy).
 
-After that, use OpenCode as usual and your work is delivered to the pet.
+After that, use OpenCode as usual and your work is delivered to the pet. To enable it for one project only, install offline from a release archive, or customize directories, see the [usage guide](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md) (Chinese).
 
 ## Offline and retries
 
@@ -75,7 +55,7 @@ The queue's `events/` stores only event IDs, types and timestamps, with no chat 
 
 ## Guides
 
-The [usage guide](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md) (Chinese) covers manual configuration, the installer script, directory options, disabling and troubleshooting. The [release guide](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/releasing.md) (Chinese) explains packaging and publishing.
+The [usage guide](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md) (Chinese) covers CLI installation and removal, project-level configuration, offline installation, directory options and troubleshooting. The [release guide](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/releasing.md) (Chinese) explains packaging and publishing.
 
 ## Development
 
