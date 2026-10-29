@@ -1,6 +1,6 @@
 {
   "name": "opencode-piggy",
-  "version": "0.2.0-rc.2",
+  "version": "0.2.0",
   "description": "OpenCode V2 工作事件直接联动官方 dsh-piggy",
   "type": "module",
   "main": "index.js",

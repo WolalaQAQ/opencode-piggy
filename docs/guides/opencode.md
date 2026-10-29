@@ -6,7 +6,7 @@ OpenCode Piggy 运行在 OpenCode V2 服务里（2.0.26 或以上）。它订阅
 
 ## 准备游戏
 
-游戏需要包含官方主线提交 `8f72f17` 提供的工作事件接口，并在启动时加上 `--work-events`，接口默认关闭。获取方式见[官方仓库](https://github.com/CLICGGER-TYPES/dsh-piggy)。
+推荐使用[官方 0.37.2-rc.5](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.5)，配套桌面外壳为 0.6.8-rc.3，已包含工作事件接口。启动时加上 `--work-events`，接口默认关闭。发布附件名使用桌面外壳版本，不是游戏版本。
 
 从官方源码运行时，在安装好依赖的 `apps/desktop` 目录执行：
 
@@ -23,42 +23,51 @@ npx electron . --work-events
 
 ### 用命令行安装
 
-`opencode plugin add` 支持 npm 和 Git 目标。从 npm 安装预发布通道 `next`：
+`opencode plugin add` 支持 npm 和 Git 目标。从 npm 安装正式版：
 
 ```sh
-opencode plugin add opencode-piggy@next
+opencode plugin add opencode-piggy@latest
 ```
 
-命令默认把插件安装为全局插件并写入配置。重新加载项目后生效；如果 OpenCode 服务仍在运行旧状态，可以执行 `opencode service restart`。
+命令默认把插件安装为全局插件并写入配置。配置会自动重载；需要手动重新加载时，在 OpenCode 中执行 `/reload`。
 
-`next` 是预发布通道，随新的预发布版本前移。需要固定版本时安装精确版本，固定版本不会自动跳到下一个版本：
+`latest` 跟随正式版本。需要固定版本时安装精确版本，固定版本不会自动跳到下一个版本：
 
 ```sh
-opencode plugin add opencode-piggy@0.2.0-rc.2
+opencode plugin add opencode-piggy@0.2.0
 ```
 
 更新、查看和移除都使用安装时的同一个目标：
 
 ```sh
 opencode plugin list
-opencode plugin update opencode-piggy@next
-opencode plugin remove opencode-piggy@next
+opencode plugin update opencode-piggy@latest
+opencode plugin remove opencode-piggy@latest
 ```
 
 要从固定版本换到新版本，先 `remove` 旧目标，再用新的版本号 `add`。
+
+此前安装了预发布通道 `@next` 的，切换到正式通道：
+
+```sh
+opencode plugin remove opencode-piggy@next
+opencode plugin add opencode-piggy@latest
+```
+
+固定 RC 版本用它原来的目标执行 `remove`。移除不会删除插件队列；若在配置文件里设置了 `options`，只替换 `package` 目标并保留选项。
 
 ### 不使用 npm 时
 
 插件也可以直接从 GitHub 仓库的子目录安装，标签、分支和 `::path:` 子目录选择器都可以使用：
 
 ```sh
-opencode plugin add "github:WolalaQAQ/opencode-piggy#v0.2.0-rc.2::path:packages/opencode-piggy"
+opencode plugin add "github:WolalaQAQ/opencode-piggy#v0.2.0::path:packages/opencode-piggy"
 ```
 
 `list` 和 `remove` 同样传这个完整目标：
 
 ```sh
-opencode plugin remove "github:WolalaQAQ/opencode-piggy#v0.2.0-rc.2::path:packages/opencode-piggy"
+opencode plugin remove "github:WolalaQAQ/opencode-piggy#v0.2.0::path:packages/opencode-piggy"
 ```
 
 标签固定了版本，不会自动跳到下一个标签；换版本时先移除旧目标，再用新标签安装。
@@ -71,7 +80,7 @@ opencode plugin remove "github:WolalaQAQ/opencode-piggy#v0.2.0-rc.2::path:packag
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    { "package": "opencode-piggy@next" }
+    { "package": "opencode-piggy@latest" }
   ]
 }
 ```
@@ -80,17 +89,17 @@ opencode plugin remove "github:WolalaQAQ/opencode-piggy#v0.2.0-rc.2::path:packag
 
 ### 离线安装发布包
 
-没有 GitHub 或 npm 访问条件时，可以使用 [Releases](https://github.com/WolalaQAQ/opencode-piggy/releases) 里的归档。`opencode-piggy-0.2.0-rc.2.tgz` 和 `opencode-piggy-0.2.0-rc.2.zip` 内容相同，顶层目录都是 `package/`。选一个稳定的位置解压，之后 OpenCode 会一直从这里加载插件。macOS 和 Linux：
+没有 GitHub 或 npm 访问条件时，可以使用 [Releases](https://github.com/WolalaQAQ/opencode-piggy/releases) 里的归档。`opencode-piggy-0.2.0.tgz` 和 `opencode-piggy-0.2.0.zip` 内容相同，顶层目录都是 `package/`。选一个稳定的位置解压，之后 OpenCode 会一直从这里加载插件。macOS 和 Linux：
 
 ```sh
 mkdir -p /path/to/plugins/opencode-piggy
-tar -xzf opencode-piggy-0.2.0-rc.2.tgz -C /path/to/plugins/opencode-piggy
+tar -xzf opencode-piggy-0.2.0.tgz -C /path/to/plugins/opencode-piggy
 ```
 
 Windows PowerShell 可以直接解压 `.zip`：
 
 ```powershell
-Expand-Archive opencode-piggy-0.2.0-rc.2.zip -DestinationPath C:\path\to\plugins\opencode-piggy
+Expand-Archive opencode-piggy-0.2.0.zip -DestinationPath C:\path\to\plugins\opencode-piggy
 ```
 
 也可以用系统自带的解压工具。无论哪种方式，插件目录都是解压位置下的 `package/`。`plugin add` 不接受 tarball，所以需要在配置文件里写这个绝对路径：
@@ -104,7 +113,7 @@ Expand-Archive opencode-piggy-0.2.0-rc.2.zip -DestinationPath C:\path\to\plugins
 }
 ```
 
-重新加载项目即可生效；如果修改的是未被监听的插件文件，重启 OpenCode 服务（`opencode service restart`）。更新时解压新版本到新的目录并修改配置中的路径。
+更新时解压新版本到新的目录并修改配置中的路径，保存后自动重载。需要手动重新加载时，在 OpenCode 中执行 `/reload`。
 
 ### 跟踪主线（开发者）
 
@@ -121,7 +130,7 @@ opencode plugin check
 opencode plugin update "github:WolalaQAQ/opencode-piggy#main::path:packages/opencode-piggy"
 ```
 
-主线可能包含未发布的改动，日常使用请安装 `next` 或带版本号的发布。
+主线可能包含未发布的改动，日常使用请安装 `latest` 或带版本号的正式发布。
 
 ### 从源码启用（开发者）
 
@@ -149,7 +158,7 @@ node scripts/install-opencode.mjs --project="/path/to/your-project"
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "opencode-piggy@next",
+      "package": "opencode-piggy@latest",
       "options": {
         "gameDirectory": "/path/to/game-data/work-endpoint",
         "directory": "/path/to/plugin-data"
@@ -167,19 +176,23 @@ node scripts/install-opencode.mjs --project="/path/to/your-project" --game-endpo
 
 ### 默认位置
 
-不设置选项时，插件先在配置根目录下找安装版的 `dsh-piggy/work-endpoint`；这个发现文件不存在时，再找源码运行使用的 `dsh-piggy-desktop/work-endpoint`。队列保存在配置根目录下的 `opencode-piggy-plugin/`。
+不设置选项时，插件优先发现官方统一的 `piggy/work-endpoint` 目录，安装版和源码版使用相同位置。插件队列不随游戏迁移：
 
-| 系统 | 配置根目录 |
-|---|---|
-| Windows | `%APPDATA%` |
-| macOS | `~/Library/Application Support` |
-| Linux | `$XDG_CONFIG_HOME`，未设置时为 `~/.config` |
+| 系统 | 游戏接口目录 | 插件队列目录 |
+|---|---|---|
+| Windows | `%APPDATA%/piggy/work-endpoint` | `%APPDATA%/opencode-piggy-plugin` |
+| macOS | `~/Library/Application Support/piggy/work-endpoint` | `~/Library/Application Support/opencode-piggy-plugin` |
+| Linux | `$XDG_DATA_HOME/piggy/work-endpoint`，默认 `~/.local/share/piggy/work-endpoint` | `$XDG_CONFIG_HOME/opencode-piggy-plugin`，默认 `~/.config/opencode-piggy-plugin` |
 
-两种游戏同时运行时优先使用安装版；想连接另一个实例，请明确设置 `gameDirectory`。显式的 `gameDirectory`（或 `--game-endpoint`）总是优先于所有自动发现。
+Linux 的 `XDG_DATA_HOME` 仅在值为绝对路径时生效，相对路径按未设置处理。新目录下的 `endpoint.json` 不存在时，插件依次回退到旧配置根目录下的 `dsh-piggy/work-endpoint` 和 `dsh-piggy-desktop/work-endpoint`。旧配置根目录在 Windows、macOS 上分别是 `%APPDATA%`、`~/Library/Application Support`，Linux 上是 `$XDG_CONFIG_HOME` 或默认的 `~/.config`。
+
+多个版本同时运行时优先连接新目录的游戏；想连接另一个实例，请明确设置 `gameDirectory`。显式的 `gameDirectory`（或 `--game-endpoint`）总是优先于所有自动发现。已有配置如果仍指向旧目录，游戏迁移后需将它改为实际的 `work-endpoint` 目录，或移除这个选项以恢复自动发现。
 
 ### 自定义游戏数据目录
 
 游戏通过环境变量 `PIGGY_USERDATA` 指定数据目录。OpenCode 服务的环境里也能读到这个变量时，插件会使用 `$PIGGY_USERDATA/work-endpoint`。只在启动游戏的终端里设置变量不会改变已经运行的 OpenCode 服务，这种情况请用 `gameDirectory`。
+
+若用游戏的 `--user-data-dir` 参数指定目录，也请把 `gameDirectory` 设置为该目录下的 `work-endpoint`。
 
 例如在 PowerShell 中用自定义目录运行官方源码版：
 
@@ -204,7 +217,7 @@ macOS 和 Linux 写作 `PIGGY_USERDATA=/path/to/game-data npx electron . --work-
 
 ## 停用
 
-用命令行安装的插件用 `opencode plugin remove` 移除，传入安装时的同一个目标（如 `opencode-piggy@next`），见[用命令行安装](#用命令行安装)。写在配置文件里的，删除对应的插件项。从源码用脚本启用的，用同样的范围参数加上 `--uninstall`：
+用命令行安装的插件用 `opencode plugin remove` 移除，传入安装时的同一个目标（如 `opencode-piggy@latest`），见[用命令行安装](#用命令行安装)。写在配置文件里的，删除对应的插件项。从源码用脚本启用的，用同样的范围参数加上 `--uninstall`：
 
 ```sh
 node scripts/install-opencode.mjs --project="/path/to/your-project" --uninstall
@@ -216,7 +229,7 @@ node scripts/install-opencode.mjs --project="/path/to/your-project" --uninstall
 
 按下面的顺序检查：
 
-1. **游戏接口**：游戏是否包含 `8f72f17`，并以 `--work-events` 启动。
+1. **游戏接口**：推荐官方 0.37.2-rc.5（桌面外壳 0.6.8-rc.3），并以 `--work-events` 启动。
 2. **发现目录**：游戏数据目录下是否有 `work-endpoint/endpoint.json`。`gameDirectory` 应指向它所在的目录，而不是 JSON 文件或存档目录。
 3. **插件加载**：OpenCode 是否为 V2 的 2.0.26 或以上，用 `opencode plugin list` 确认插件已安装，项目是否已重新加载，有没有同时存在的全局、项目或脚本重复入口。OpenCode 日志中以 `[opencode-piggy]` 开头的行来自插件。
 4. **待投事件**：队列目录的 `events/` 下是否还有事件文件。游戏打开后等一个重试周期；已过 7 天接收窗口的事件不会再自动投递。

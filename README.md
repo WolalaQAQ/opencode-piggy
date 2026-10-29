@@ -11,22 +11,22 @@ OpenCode Piggy 是一个自包含的 OpenCode V2 插件，让 [dsh-piggy](https:
 | 组件 | 要求 |
 |---|---|
 | OpenCode | V2，2.0.26 或以上 |
-| dsh-piggy | 包含主线提交 `8f72f17` 的工作事件接口，并以 `--work-events` 启动 |
-| 插件版本 | 0.2.0-rc.2 |
+| dsh-piggy | 推荐 0.37.2-rc.5（桌面外壳 0.6.8-rc.3），以 `--work-events` 启动 |
+| 插件版本 | 0.2.0 |
 
 ## 快速开始
 
 ### 1. 安装插件
 
-用 OpenCode V2 的命令行从 npm 安装预发布通道 `next`：
+用 OpenCode V2 的命令行从 npm 安装正式版：
 
 ```sh
-opencode plugin add opencode-piggy@next
+opencode plugin add opencode-piggy@latest
 ```
 
 命令默认安装为全局插件并写入配置，不需要手动下载、解压或修改 JSON。重新加载项目后插件生效，Desktop 和 TUI 都不需要额外设置。插件只使用 Node 内置模块。
 
-`next` 是预发布通道，随新的预发布版本前移；要固定版本，安装 `opencode-piggy@0.2.0-rc.2`。固定版本不会自动跳到下一个版本。不使用 npm 时，可以改用 GitHub 目标 `github:WolalaQAQ/opencode-piggy#v0.2.0-rc.2::path:packages/opencode-piggy`，见[使用指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md#用命令行安装)。
+`latest` 跟随正式版本；要固定版本，安装 `opencode-piggy@0.2.0`。固定版本不会自动跳到下一个版本。从 `@next` 或固定 RC 版本升级时，先移除旧安装目标，再添加 `@latest`，队列会保留。不使用 npm 时，可以改用 GitHub 目标 `github:WolalaQAQ/opencode-piggy#v0.2.0::path:packages/opencode-piggy`，见[使用指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md#用命令行安装)。
 
 ### 2. 启动游戏
 
@@ -37,7 +37,7 @@ npm run pack-game
 npx electron . --work-events
 ```
 
-使用安装版时，在应用的启动参数里加入 `--work-events` 即可。游戏需要包含接口所在的主线提交 `8f72f17`，获取方式见[官方仓库](https://github.com/CLICGGER-TYPES/dsh-piggy)。
+使用安装版时，在应用的启动参数里加入 `--work-events` 即可。[官方 0.37.2-rc.5](https://github.com/CLICGGER-TYPES/dsh-piggy/releases/tag/v0.37.2-rc.5) 已包含所需接口；下载文件名中的 `0.6.8-rc.3` 是桌面外壳版本。
 
 之后正常使用 OpenCode，你的工作会被投递给小猪。只想在某个项目里启用、离线安装发布包或自定义目录时，参见[使用指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md)。
 
@@ -49,7 +49,15 @@ npx electron . --work-events
 
 ## 目录与数据
 
-插件默认在配置根目录下发现游戏的 `dsh-piggy/work-endpoint`，找不到时再尝试源码版的 `dsh-piggy-desktop/work-endpoint`；事件队列默认保存在配置根目录下的 `opencode-piggy-plugin/`。Windows 的配置根目录是 `%APPDATA%`，macOS 是 `~/Library/Application Support`，Linux 是 `$XDG_CONFIG_HOME` 或 `~/.config`。
+插件优先在官方统一数据目录的 `piggy/work-endpoint` 发现游戏，事件队列保持原位置：
+
+| 系统 | 游戏接口目录 | 插件队列目录 |
+|---|---|---|
+| Windows | `%APPDATA%/piggy/work-endpoint` | `%APPDATA%/opencode-piggy-plugin` |
+| macOS | `~/Library/Application Support/piggy/work-endpoint` | `~/Library/Application Support/opencode-piggy-plugin` |
+| Linux | `$XDG_DATA_HOME/piggy/work-endpoint`，默认 `~/.local/share/piggy/work-endpoint` | `$XDG_CONFIG_HOME/opencode-piggy-plugin`，默认 `~/.config/opencode-piggy-plugin` |
+
+Linux 的 `XDG_DATA_HOME` 仅在值为绝对路径时生效。新版发现文件不存在时，插件仍会依次尝试旧配置目录下的 `dsh-piggy/work-endpoint` 和 `dsh-piggy-desktop/work-endpoint`。已有的显式路径配置继续优先；游戏改用新目录后，需同步更新仍指向旧目录的 `gameDirectory`。
 
 队列的 `events/` 里只保存事件 ID、类型和时间，不含聊天内容、代码或工具输出。游戏自定义了数据目录，或想改队列位置时，参见[使用指南](https://github.com/WolalaQAQ/opencode-piggy/blob/main/docs/guides/opencode.md#配置游戏目录与队列)。反馈问题时请不要分享游戏 `work-endpoint/endpoint.json`，其中含本机认证令牌。
 

@@ -2,6 +2,22 @@
 
 中文 | [English](CHANGELOG.en.md)
 
+## [0.2.0] - 2026-10-30
+
+### Features
+- 第三方 agent 工作事件接口已转正，插件以正式版发布到 npm `latest`，安装目标为 `opencode-piggy@latest`。
+- 跟进官方 dsh-piggy 0.37.2-rc.5（桌面外壳 0.6.8-rc.3），优先发现统一的 `piggy/work-endpoint` 目录。
+- Linux 游戏发现遵循绝对路径的 `XDG_DATA_HOME`，默认使用 `~/.local/share/piggy/work-endpoint`。Windows 和 macOS 分别使用 `%APPDATA%/piggy/work-endpoint` 和 `~/Library/Application Support/piggy/work-endpoint`。
+
+### Design Rationale
+- 游戏数据目录由官方桌面外壳管理；插件跟随其默认位置，不迁移游戏数据或插件队列。
+- 工作事件协议仍为 v1，事件格式、稳定 ID、提交确认与七天离线窗口保持不变。
+
+### Notes & Caveats
+- 从 `@next` 或固定 RC 版本升级时，先移除旧安装目标，再添加 `opencode-piggy@latest`；插件队列保留。
+- 新目录没有发现文件时，仍依次回退到旧配置目录下的 `dsh-piggy/work-endpoint` 和 `dsh-piggy-desktop/work-endpoint`。
+- `gameDirectory` 和 `PIGGY_USERDATA` 保持优先；显式指向旧目录的配置需要随游戏实际位置更新。启动游戏时仍需 `--work-events`。
+
 ## [0.2.0-rc.2] - 2026-10-16
 
 ### Features

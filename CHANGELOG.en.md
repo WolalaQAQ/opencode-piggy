@@ -2,6 +2,22 @@
 
 [中文](CHANGELOG.md) | English
 
+## [0.2.0] - 2026-10-30
+
+### Features
+- With the third-party agent work-event API now stable, the plugin ships as a stable release on npm `latest`, installed as `opencode-piggy@latest`.
+- Follow official dsh-piggy 0.37.2-rc.5 (desktop shell 0.6.8-rc.3), discovering the unified `piggy/work-endpoint` directory first.
+- Linux game discovery follows an absolute `XDG_DATA_HOME`, defaulting to `~/.local/share/piggy/work-endpoint`. Windows and macOS use `%APPDATA%/piggy/work-endpoint` and `~/Library/Application Support/piggy/work-endpoint`, respectively.
+
+### Design Rationale
+- The official desktop shell manages game data paths; the plugin follows its defaults without migrating game data or the plugin queue.
+- The work-event protocol remains v1, so event payloads, stable IDs, commit acknowledgements and the seven-day offline window stay unchanged.
+
+### Notes & Caveats
+- To upgrade from `@next` or a pinned RC, remove the old install target before adding `opencode-piggy@latest`; the plugin queue is preserved.
+- If the new directory has no discovery file, discovery still falls back to `dsh-piggy/work-endpoint` and then `dsh-piggy-desktop/work-endpoint` under the old configuration root.
+- `gameDirectory` and `PIGGY_USERDATA` keep taking priority; update explicit paths that still point to an old directory when the game moves. Start the game with `--work-events` as before.
+
 ## [0.2.0-rc.2] - 2026-10-16
 
 ### Features
