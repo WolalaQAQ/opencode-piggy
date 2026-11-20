@@ -1,7 +1,7 @@
 // @ts-check
 /** 自包含 V2 插件：异步保存工作事件并投递官方工作事件 HTTP。 */
 import { isAbsolute } from 'node:path'
-import { pluginDirectory, gameDirectories } from './paths.js'
+import { pluginDirectory, gameDiscovery } from './paths.js'
 import { retainDirectClient } from './direct-client.js'
 import { createEventAdapter } from './event-adapter.js'
 
@@ -102,7 +102,7 @@ async function setup(ctx) {
     validateContext(ctx)
     const options = validateOptions(ctx.options)
     const retained = await retainDirectClient({ directory: pluginDirectory(options),
-      gameDirectory: gameDirectories(options), log })
+      game: gameDiscovery(options), log })
     releaseClient = retained.release
     adapter = createEventAdapter({ location: ctx.location, log,
       fetchSession: ctx.session?.get ? sessionID => ctx.session.get({ sessionID }, { signal: controller.signal }) : undefined })

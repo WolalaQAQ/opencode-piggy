@@ -14,7 +14,7 @@ npm install --ignore-scripts
 
 发布前的版本准备：
 
-1. 根目录和 `packages/opencode-piggy/package.json` 使用同一正式版本，例如 `0.2.0`。
+1. 根目录和 `packages/opencode-piggy/package.json` 使用同一正式版本，例如 `0.2.1`。
 2. 中英文 CHANGELOG 有对应版本小节，中英文 README 同步更新。
 
 运行检查并打包：
@@ -27,8 +27,8 @@ npm run pack:plugin
 产物位于 `dist/`：
 
 ```text
-dist/opencode-piggy-0.2.0.tgz
-dist/opencode-piggy-0.2.0.zip
+dist/opencode-piggy-0.2.1.tgz
+dist/opencode-piggy-0.2.1.zip
 ```
 
 两个归档内容相同，顶层目录都是 `package/`，里面只有插件代码、`LICENSE` 和 `README`。插件只引用本包文件和 Node 内置模块，使用者不需要安装额外的 Node 才能运行或解包。
@@ -38,10 +38,10 @@ dist/opencode-piggy-0.2.0.zip
 用 `tar` 查看 tgz 的文件清单，确认没有开发资料或包外依赖：
 
 ```sh
-tar -tzf dist/opencode-piggy-0.2.0.tgz
+tar -tzf dist/opencode-piggy-0.2.1.tgz
 ```
 
-然后按[使用指南](opencode.md#离线安装发布包)把归档解压到一个稳定目录，让 OpenCode 加载其中的 `package/`。在游戏关闭时执行一次工作，确认事件进入队列的 `events/`；用 `--work-events` 启动游戏后，事件应通过自动重试投递并从队列消失。推荐使用官方 0.37.2-rc.5（桌面外壳 0.6.8-rc.3），并核对插件能自动发现新 `piggy` 数据目录；同时保留旧目录回退的验收。
+然后按[使用指南](opencode.md#离线安装发布包)把归档解压到一个稳定目录，让 OpenCode 加载其中的 `package/`。在游戏关闭时执行一次工作，确认事件进入队列的 `events/`；用 `--work-events` 启动游戏后，事件应通过自动重试投递并从队列消失。检查没有设置 `gameDirectory` 时，插件能找到当前完整存档的工作接口，也能回退到普通存档和旧版的接口目录。
 
 ## 发布到 npm
 
@@ -51,7 +51,7 @@ tar -tzf dist/opencode-piggy-0.2.0.tgz
 npm login
 npm run check
 npm run pack:plugin
-npm publish ./dist/opencode-piggy-0.2.0.tgz --access public --tag latest --registry=https://registry.npmjs.org
+npm publish ./dist/opencode-piggy-0.2.1.tgz --access public --tag latest --registry=https://registry.npmjs.org
 ```
 
 只发布 `dist/` 里的插件 tgz，不发布根目录的 `package.json`（它是私有的开发包），也不用 zip。想先预检，在发布命令末尾加 `--dry-run`，它会列出将要发布的内容而不真正上传。
@@ -64,7 +64,7 @@ Release 由 GitHub Actions 的 **Release** 工作流完成，使用自动提供�
 
 ### 标签发布
 
-提交版本改动后推送 `v<版本>` 标签，例如 `v0.2.0`。标签必须与根目录 `package.json` 的版本一致。工作流依次运行 `npm run check` 和打包，创建草稿 Release，上传 `.tgz` 与 `.zip`，最后公开。正式版本不会标记为预发布。
+提交版本改动后推送 `v<版本>` 标签，例如 `v0.2.1`。标签必须与根目录 `package.json` 的版本一致。工作流依次运行 `npm run check` 和打包，创建草稿 Release，上传 `.tgz` 与 `.zip`，最后公开。正式版本不会标记为预发布。
 
 Release 只包含这两个插件归档，不包含游戏、安装程序或开发记录。工作流不发布 npm 包；Git 子目录目标使用的标签就是这里推送的 `v<版本>` 标签。
 

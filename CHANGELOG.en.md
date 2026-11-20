@@ -2,6 +2,17 @@
 
 [中文](CHANGELOG.md) | English
 
+## [0.2.1] - 2026-11-21
+
+### Features
+- Fix automatic work-endpoint discovery for standalone full saves. Start the game with `--work-events`; no manual endpoint path is needed. Subsequent deliveries follow the active archive when you switch saves.
+
+### Design Rationale
+- The plugin reads only the active archive selection and endpoint discovery metadata. It does not read or modify game saves.
+
+### Notes & Caveats
+- An explicit `gameDirectory` still takes priority. If you set one as a workaround for a standalone full save, you can remove it after updating. Legacy directory fallback and the game's seven-day acceptance window are unchanged.
+
 ## [0.2.0] - 2026-10-30
 
 ### Features

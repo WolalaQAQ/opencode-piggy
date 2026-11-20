@@ -4,15 +4,15 @@ import { join } from 'node:path'
 import { constants } from 'node:fs'
 import { lstat, open } from 'node:fs/promises'
 import { request } from 'node:http'
+import { gameDirectories } from './paths.js'
 import { verifyPrivateWorkFileAsync } from './work-files.js'
 
 const JSON_LIMIT = 1024
 const REQUEST_MS = 10000
 
-/** @param {{directory:string|string[]}} options */
-export function createGameEndpoint(options) {
+/** @param {import('./paths.js').GameDiscovery} discovery */
+export function createGameEndpoint(discovery) {
   let identity = ''
-  const directories = Array.isArray(options.directory) ? options.directory : [options.directory]
 
   async function readDiscovery(directory) {
     const path = join(directory, 'endpoint.json')
@@ -36,11 +36,12 @@ export function createGameEndpoint(options) {
   }
 
   async function discover() {
-    for (let index = 0; index < directories.length; index++) {
-      try { return await readDiscovery(directories[index]) } catch (error) {
-        if (error.code !== 'ENOENT' || index === directories.length - 1) throw error
+    for await (const directory of gameDirectories(discovery)) {
+      try { return await readDiscovery(directory) } catch (error) {
+        if (error.code !== 'ENOENT') throw error
       }
     }
+    throw Object.assign(new Error('game endpoint not found'), { code: 'ENOENT' })
   }
 
   return {

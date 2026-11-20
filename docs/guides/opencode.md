@@ -34,7 +34,7 @@ opencode plugin add opencode-piggy@latest
 `latest` 跟随正式版本。需要固定版本时安装精确版本，固定版本不会自动跳到下一个版本：
 
 ```sh
-opencode plugin add opencode-piggy@0.2.0
+opencode plugin add opencode-piggy@0.2.1
 ```
 
 更新、查看和移除都使用安装时的同一个目标：
@@ -61,13 +61,13 @@ opencode plugin add opencode-piggy@latest
 插件也可以直接从 GitHub 仓库的子目录安装，标签、分支和 `::path:` 子目录选择器都可以使用：
 
 ```sh
-opencode plugin add "github:WolalaQAQ/opencode-piggy#v0.2.0::path:packages/opencode-piggy"
+opencode plugin add "github:WolalaQAQ/opencode-piggy#v0.2.1::path:packages/opencode-piggy"
 ```
 
 `list` 和 `remove` 同样传这个完整目标：
 
 ```sh
-opencode plugin remove "github:WolalaQAQ/opencode-piggy#v0.2.0::path:packages/opencode-piggy"
+opencode plugin remove "github:WolalaQAQ/opencode-piggy#v0.2.1::path:packages/opencode-piggy"
 ```
 
 标签固定了版本，不会自动跳到下一个标签；换版本时先移除旧目标，再用新标签安装。
@@ -89,17 +89,17 @@ opencode plugin remove "github:WolalaQAQ/opencode-piggy#v0.2.0::path:packages/op
 
 ### 离线安装发布包
 
-没有 GitHub 或 npm 访问条件时，可以使用 [Releases](https://github.com/WolalaQAQ/opencode-piggy/releases) 里的归档。`opencode-piggy-0.2.0.tgz` 和 `opencode-piggy-0.2.0.zip` 内容相同，顶层目录都是 `package/`。选一个稳定的位置解压，之后 OpenCode 会一直从这里加载插件。macOS 和 Linux：
+没有 GitHub 或 npm 访问条件时，可以使用 [Releases](https://github.com/WolalaQAQ/opencode-piggy/releases) 里的归档。`opencode-piggy-0.2.1.tgz` 和 `opencode-piggy-0.2.1.zip` 内容相同，顶层目录都是 `package/`。选一个稳定的位置解压，之后 OpenCode 会一直从这里加载插件。macOS 和 Linux：
 
 ```sh
 mkdir -p /path/to/plugins/opencode-piggy
-tar -xzf opencode-piggy-0.2.0.tgz -C /path/to/plugins/opencode-piggy
+tar -xzf opencode-piggy-0.2.1.tgz -C /path/to/plugins/opencode-piggy
 ```
 
 Windows PowerShell 可以直接解压 `.zip`：
 
 ```powershell
-Expand-Archive opencode-piggy-0.2.0.zip -DestinationPath C:\path\to\plugins\opencode-piggy
+Expand-Archive opencode-piggy-0.2.1.zip -DestinationPath C:\path\to\plugins\opencode-piggy
 ```
 
 也可以用系统自带的解压工具。无论哪种方式，插件目录都是解压位置下的 `package/`。`plugin add` 不接受 tarball，所以需要在配置文件里写这个绝对路径：
@@ -148,7 +148,7 @@ node scripts/install-opencode.mjs --project="/path/to/your-project"
 
 | 插件选项 | 安装脚本参数 | 用途 |
 |---|---|---|
-| `gameDirectory` | `--game-endpoint` | 游戏的 `work-endpoint/` 目录，也就是 `endpoint.json` 所在目录，不是存档目录 |
+| `gameDirectory` | `--game-endpoint` | 游戏接口的 `endpoint.json` 所在目录，不是存档目录 |
 | `directory` | `--directory` | 插件自己的队列目录，事件保存在其中的 `events/` |
 
 配置示例：
@@ -176,7 +176,7 @@ node scripts/install-opencode.mjs --project="/path/to/your-project" --game-endpo
 
 ### 默认位置
 
-不设置选项时，插件优先发现官方统一的 `piggy/work-endpoint` 目录，安装版和源码版使用相同位置。插件队列不随游戏迁移：
+不设置选项时，插件优先检查官方统一的 `piggy` 数据目录。使用「独立完整存档」时，插件从 `owner-archive-selection.json` 读取已生效的存档选择，优先检查 `<ownerDocumentPath>.work-events/endpoint.json`，找不到时再检查默认接口目录。插件队列不随游戏迁移：
 
 | 系统 | 游戏接口目录 | 插件队列目录 |
 |---|---|---|
@@ -184,15 +184,15 @@ node scripts/install-opencode.mjs --project="/path/to/your-project" --game-endpo
 | macOS | `~/Library/Application Support/piggy/work-endpoint` | `~/Library/Application Support/opencode-piggy-plugin` |
 | Linux | `$XDG_DATA_HOME/piggy/work-endpoint`，默认 `~/.local/share/piggy/work-endpoint` | `$XDG_CONFIG_HOME/opencode-piggy-plugin`，默认 `~/.config/opencode-piggy-plugin` |
 
-Linux 的 `XDG_DATA_HOME` 仅在值为绝对路径时生效，相对路径按未设置处理。新目录下的 `endpoint.json` 不存在时，插件依次回退到旧配置根目录下的 `dsh-piggy/work-endpoint` 和 `dsh-piggy-desktop/work-endpoint`。旧配置根目录在 Windows、macOS 上分别是 `%APPDATA%`、`~/Library/Application Support`，Linux 上是 `$XDG_CONFIG_HOME` 或默认的 `~/.config`。
+Linux 的 `XDG_DATA_HOME` 仅在值为绝对路径时生效，相对路径按未设置处理。统一目录没有接口时，插件依次检查旧配置根目录下的 `dsh-piggy` 和 `dsh-piggy-desktop`。旧配置根目录在 Windows、macOS 上分别是 `%APPDATA%`、`~/Library/Application Support`，Linux 上是 `$XDG_CONFIG_HOME` 或默认的 `~/.config`。
 
-多个版本同时运行时优先连接新目录的游戏；想连接另一个实例，请明确设置 `gameDirectory`。显式的 `gameDirectory`（或 `--game-endpoint`）总是优先于所有自动发现。已有配置如果仍指向旧目录，游戏迁移后需将它改为实际的 `work-endpoint` 目录，或移除这个选项以恢复自动发现。
+多个版本同时运行时优先连接统一数据目录的游戏；想连接另一个实例，请明确设置 `gameDirectory`。显式的 `gameDirectory`（或 `--game-endpoint`）总是优先于所有自动发现。已有配置如果仍指向旧接口，请改为实际接口目录，或移除该选项以恢复自动发现。
 
 ### 自定义游戏数据目录
 
-游戏通过环境变量 `PIGGY_USERDATA` 指定数据目录。OpenCode 服务的环境里也能读到这个变量时，插件会使用 `$PIGGY_USERDATA/work-endpoint`。只在启动游戏的终端里设置变量不会改变已经运行的 OpenCode 服务，这种情况请用 `gameDirectory`。
+游戏通过环境变量 `PIGGY_USERDATA` 指定数据目录。OpenCode 服务的环境里也有这个变量时，插件在该目录内自动查找当前完整存档的接口，再回退到 `work-endpoint`。只在启动游戏的终端里设置变量不会改变已经运行的 OpenCode 服务，这种情况请用 `gameDirectory`。
 
-若用游戏的 `--user-data-dir` 参数指定目录，也请把 `gameDirectory` 设置为该目录下的 `work-endpoint`。
+若只用游戏的 `--user-data-dir` 参数指定目录，请将 `gameDirectory` 指向实际接口目录。
 
 例如在 PowerShell 中用自定义目录运行官方源码版：
 
@@ -213,7 +213,7 @@ macOS 和 Linux 写作 `PIGGY_USERDATA=/path/to/game-data npx electron . --work-
 
 ## 隐私
 
-`events/` 里的文件只记录事件 ID、类型和时间，不含聊天内容、代码或工具输出。游戏存档及其收据完全由游戏管理，插件不会读写。`work-endpoint/endpoint.json` 包含本机认证令牌，反馈问题时请不要分享它或整个游戏数据目录。
+`events/` 里的文件只记录事件 ID、类型和时间，不含聊天内容、代码或工具输出。游戏存档及其收据完全由游戏管理；插件只读取本机存档选择和接口发现信息。接口目录里的 `endpoint.json` 包含本机认证令牌，反馈问题时请不要分享它或整个游戏数据目录。
 
 ## 停用
 
@@ -230,7 +230,7 @@ node scripts/install-opencode.mjs --project="/path/to/your-project" --uninstall
 按下面的顺序检查：
 
 1. **游戏接口**：推荐官方 0.37.2-rc.5（桌面外壳 0.6.8-rc.3），并以 `--work-events` 启动。
-2. **发现目录**：游戏数据目录下是否有 `work-endpoint/endpoint.json`。`gameDirectory` 应指向它所在的目录，而不是 JSON 文件或存档目录。
+2. **发现目录**：普通存档检查 `work-endpoint/endpoint.json`；独立完整存档检查当前存档旁的 `owner-document.json.work-events/endpoint.json`。如果设置了 `gameDirectory`，确认它指向 `endpoint.json` 所在目录，而不是 JSON 文件或存档目录。
 3. **插件加载**：OpenCode 是否为 V2 的 2.0.26 或以上，用 `opencode plugin list` 确认插件已安装，项目是否已重新加载，有没有同时存在的全局、项目或脚本重复入口。OpenCode 日志中以 `[opencode-piggy]` 开头的行来自插件。
 4. **待投事件**：队列目录的 `events/` 下是否还有事件文件。游戏打开后等一个重试周期；已过 7 天接收窗口的事件不会再自动投递。
 

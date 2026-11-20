@@ -13,7 +13,7 @@ const MAX_SCAN = 8192
 const JSON_LIMIT = 1024
 const RETRY_MS = 5000
 
-/** @typedef {{directory:string,gameDirectory:string|string[],log?:(message:string)=>void}} DirectClientOptions */
+/** @typedef {{directory:string,game:import('./paths.js').GameDiscovery,log?:(message:string)=>void}} DirectClientOptions */
 
 /** 不展开解析异常、HTTP 正文、令牌或系统命令输出。 */
 function reason(error) {
@@ -47,7 +47,7 @@ async function remove(path) {
 /** @param {DirectClientOptions} options */
 export function createDirectClient(options) {
   const events = join(options.directory, 'events')
-  const endpoint = createGameEndpoint({ directory: options.gameDirectory })
+  const endpoint = createGameEndpoint(options.game)
   /** @type {Map<string, Promise<boolean>>} */
   const pending = new Map()
   let writing = Promise.resolve()
@@ -205,8 +205,9 @@ function directoryKey(directory) {
  */
 export async function retainDirectClient(options) {
   const key = directoryKey(options.directory)
-  const directories = Array.isArray(options.gameDirectory) ? options.gameDirectory : [options.gameDirectory]
-  const gameKey = JSON.stringify(directories.map(directoryKey))
+  const gameKey = JSON.stringify('directory' in options.game
+    ? { directory: directoryKey(options.game.directory) }
+    : { userData: options.game.userData.map(directoryKey) })
   let shared = sharedClients.get(key)
   // 项目切换可与最后一个旧实例的 HTTP 收尾重叠；等待交接，不让新插件永久停用。
   while (shared?.closing) {
